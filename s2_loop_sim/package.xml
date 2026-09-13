@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>s2_loop_sim</name>
+  <version>0.1.0</version>
+  <description>S2 Loop simulation: vehicle, obstacles, and waypoint scene for Gazebo</description>
+  <maintainer email="user@example.com">user</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ros_gz_sim</exec_depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+    <gazebo_model_path>models</gazebo_model_path>
+  </export>
+</package>

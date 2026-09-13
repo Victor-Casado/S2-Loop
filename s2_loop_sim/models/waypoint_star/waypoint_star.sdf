@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="waypoint_star">
+    <static>true</static>
+    <link name="star">
+      <visual name="visual">
+        <geometry>
+          <polyline>
+            <height>0.12</height>
+            <point>0.000000 0.500000</point>
+            <point>0.117557 0.161803</point>
+            <point>0.475528 0.154508</point>
+            <point>0.190211 -0.061803</point>
+            <point>0.293893 -0.404508</point>
+            <point>0.000000 -0.200000</point>
+            <point>-0.293893 -0.404508</point>
+            <point>-0.190211 -0.061803</point>
+            <point>-0.475528 0.154508</point>
+            <point>-0.117557 0.161803</point>
+          </polyline>
+        </geometry>
+        <material>
+          <ambient>1.0 0.8 0.0 1.0</ambient>
+          <diffuse>1.0 0.8 0.0 1.0</diffuse>
+          <specular>0.1 0.1 0.1 1.0</specular>
+          <emissive>0.2 0.16 0.0 1.0</emissive>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>
