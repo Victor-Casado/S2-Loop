@@ -51,14 +51,27 @@ def free_spot(taken, radius):
 
 
 def random_layout():
-    """Yield (spawn, index, spot) for every model to create, none overlapping."""
+    """Return (spawn, index, spot) for every model to create, none overlapping."""
     taken = [PARKED_VEHICLE]
+    placements = []
 
     for spawn in SPAWNS:
         for index in range(1, spawn.count + 1):
             spot = free_spot(taken, spawn.radius)
             taken.append(spot)
-            yield spawn, index, spot
+            placements.append((spawn, index, spot))
+
+    return placements
+
+
+def star_coordinates(placements):
+    """Flatten the waypoint star positions into command-line arguments."""
+    coordinates = []
+    for spawn, _, spot in placements:
+        if spawn.model == 'waypoint_star':
+            coordinates += [str(spot.x), str(spot.y)]
+
+    return coordinates
 
 
 def create_model(models_path, spawn, index, spot):
@@ -78,6 +91,7 @@ def generate_launch_description():
     package_path = get_package_share_directory('s2_loop_sim')
     world_path = os.path.join(package_path, 'worlds', f'{WORLD_NAME}.sdf')
     models_path = os.path.join(package_path, 'models')
+    placements = random_layout()
 
     return LaunchDescription([
 
@@ -92,6 +106,11 @@ def generate_launch_description():
 
         TimerAction(period=SPAWN_DELAY,
                     actions=[create_model(models_path, *placement)
-                             for placement in random_layout()]),
+                             for placement in placements]),
+
+        TimerAction(period=SPAWN_DELAY,
+                    actions=[Node(package='s2_loop_sim',
+                                  executable='waypoint_driver.py',
+                                  arguments=star_coordinates(placements))]),
 
     ])
