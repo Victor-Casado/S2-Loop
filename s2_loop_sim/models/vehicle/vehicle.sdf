@@ -22,6 +22,22 @@
           <specular>0.6 0.6 0.6 1.0</specular>
         </material>
       </visual>
+      <visual name="front">
+        <pose>0.525 0 0 0 0 0</pose>
+        <geometry>
+          <box><size>0.25 0.36 0.18</size></box>
+        </geometry>
+        <material>
+          <ambient>0.8 0.0 0.0 1.0</ambient>
+          <diffuse>1.0 0.0 0.0 1.0</diffuse>
+        </material>
+      </visual>
+      <collision name="front_collision">
+        <pose>0.525 0 0 0 0 0</pose>
+        <geometry>
+          <box><size>0.25 0.36 0.18</size></box>
+        </geometry>
+      </collision>
       <collision name="collision">
         <geometry>
           <box>
