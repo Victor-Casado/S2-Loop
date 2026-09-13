@@ -4,9 +4,12 @@
   toolchain discovers the package, orders the build, and checks that what the
   code imports is actually declared.
 
-  buildtool_depend is what builds the package. exec_depend is what it needs at
-  runtime. This package compiles nothing, so everything below is an exec
-  dependency, and each one maps to something imported by the Python files:
+  buildtool_depend is what builds the package; ament_cmake is the CMake layer
+  and ament_cmake_python installs the importable constants module.
+
+  exec_depend is what the package needs at runtime. It compiles nothing, so
+  every remaining entry is an exec dependency, and each maps to something the
+  Python files import:
   ament_index_python and launch_ros for the launch file, rclpy, geometry_msgs,
   std_msgs and ros_gz_interfaces for the movement engine, ros_gz_sim for the
   `create` tool that spawns models, ros_gz_bridge for the process that connects
@@ -19,6 +22,7 @@
   <maintainer email="user@example.com">user</maintainer>
   <license>MIT</license>
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>launch_ros</exec_depend>
