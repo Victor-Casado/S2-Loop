@@ -1,0 +1,31 @@
+S1. Get a simulated vehicle driving itself to a set of randomized goal points in Gazebo, without you touching the controls, while it avoids obstacles in its path.
+
+Detailed Description:
+Build a simulation, running on ROS 2 Jazzy with Gazebo, in which:
+
+A vehicle starts at some origin point. A simple moving cube/box as the vehicle is completely fine, this is not a modeling exercise
+A set of randomized XY coordinates is generated as waypoints for it to visit, in sequence.
+The environment between waypoints contains obstacles ex. walls, hills/ramps that the vehicle must not drive through.
+The vehicle navigates to each waypoint autonomously: no keyboard teleop, no manual driving. This should be a node (or set of nodes) that takes in the current position, the next goal, and whatever obstacle/sensor info you choose to use, and publishes movement commands on its own.
+
+You have design freedom here: how you detect obstacles (a real sensor plugin, a simplified costmap, raycasting, or just hardcoded knowledge of wall positions) and how you plan paths (something as simple as move-toward-goal-and-turn-if-blocked is acceptable — you are not expected to reimplement Nav2).
+
+Deliverable:
+Install the Following:
+
+Ubuntu 24.04 LTS
+ROS 2 Jazzy Jalisco
+Gazebo (the version that pairs with Jazzy — Gazebo Harmonic)
+colcon + standard ROS 2 dev tools
+
+(How you get these running  ie. VM, dual boot, WSL2, etc. is up to you. However, we strongly recommend dual booting or a VM as WSL is known to have issues.)
+
+Document in your log:
+
+A screen recording link of the simulation running in Gazebo, showing the vehicle visiting at least 3 waypoints in one run, going around at least one obstacle.
+The launch file(s) and any world/model files needed to reproduce your sim. These should be pushed to a public GitHub repository and the link should be in your log.
+A short explanation of how your navigation logic decides where to go and how it detects/avoids obstacles.
+How did you generate the random waypoints, and how does the vehicle know it has "arrived" at one (what's your tolerance/threshold)?
+How does your obstacle avoidance actually work — what does the vehicle "see," and what does it do when something is in the way?
+What happens if a waypoint is unreachable or the vehicle gets stuck? Did you handle that, or did you discover it by watching it happen?
+What would you change if this had to run on real hardware instead of in Gazebo?
