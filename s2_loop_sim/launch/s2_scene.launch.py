@@ -44,5 +44,10 @@ def generate_launch_description():
             cmd=['gz', 'sim', '-r', world_path],
             output='screen',
         ),
+        Node(
+            package='ros_gz_bridge', executable='parameter_bridge',
+            arguments=['/world/s2_scene/set_pose@ros_gz_interfaces/srv/SetEntityPose'],
+        ),
+        Node(package='s2_loop_sim', executable='movement_engine.py'),
         TimerAction(period=2.0, actions=entities),
     ])

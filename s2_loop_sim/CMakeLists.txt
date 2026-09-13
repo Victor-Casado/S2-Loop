@@ -7,4 +7,8 @@ install(DIRECTORY launch worlds models
   DESTINATION share/${PROJECT_NAME}
 )
 
+install(PROGRAMS scripts/movement_engine.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_package()
