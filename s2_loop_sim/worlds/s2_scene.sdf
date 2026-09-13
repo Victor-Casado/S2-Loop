@@ -1,11 +1,25 @@
 <?xml version="1.0"?>
+<!--
+  The world: the empty stage everything else is placed on. Gazebo loads this
+  file at startup; the obstacles and waypoints are not here because the launch
+  file injects them afterwards at random positions.
+
+  See models/vehicle/vehicle.sdf for what model, link, visual and collision
+  mean, and for the units and colour conventions used throughout.
+-->
 <sdf version="1.9">
   <world name="s2_scene">
+    <!-- Earth gravity, pointing down the z axis. The world name matters: ROS
+         topics and services from this world are namespaced under it, which is
+         where /world/s2_scene/set_pose gets its middle section. -->
     <gravity>0 0 -9.81</gravity>
+    <!-- Which collision solver to use. ODE is the default and is plenty for
+         boxes and spheres. -->
     <physics name="default" type="ode">
     </physics>
 
-    <!-- Sun -->
+    <!-- Sun. A directional light is infinitely far away, so only <direction>
+         affects the shading; the pose is effectively decoration. -->
     <light type="directional" name="sun">
       <pose>0 0 10 0 0 0</pose>
       <diffuse>0.9 0.9 0.9 1</diffuse>
@@ -13,7 +27,9 @@
       <direction>-0.5 0.1 -0.9</direction>
     </light>
 
-    <!-- Ground plane -->
+    <!-- Ground plane. Static, so physics never simulates it, and 100 m square,
+         far larger than the 9 m arena the launch file spawns into. The plane's
+         <normal> points up the z axis, making it horizontal. -->
     <model name="ground_plane">
       <static>true</static>
       <link name="link">
@@ -40,7 +56,13 @@
       </link>
     </model>
 
-    <!-- ======================== VEHICLE ======================== -->
+    <!-- ======================== VEHICLE ========================
+         Pulled in from models/vehicle/vehicle.sdf. Gazebo resolves model://
+         by searching GZ_SIM_RESOURCE_PATH, which the launch file sets. <name>
+         is what the model is called in this world, and it is the name the
+         movement engine addresses in its set_pose calls. It spawns slightly
+         above the ground and drops the last few centimetres.
+    -->
     <include>
       <uri>model://vehicle</uri>
       <name>vehicle</name>

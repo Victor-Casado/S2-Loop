@@ -1,4 +1,12 @@
 <?xml version="1.0"?>
+<!--
+  One obstacle. The launch file spawns five of these at random positions.
+
+  <static>true</static> tells the physics engine to skip simulating this body:
+  it never falls, never gets pushed, and costs nothing per step. Other things
+  still collide with it. See vehicle.sdf for how model, link, visual and
+  collision fit together.
+-->
 <sdf version="1.9">
   <model name="sphere_obstacle">
     <static>true</static>
@@ -13,6 +21,7 @@
           <specular>0.3 0.3 0.3 1.0</specular>
         </material>
       </visual>
+      <!-- Same radius as the visual, so what you see is what you hit. -->
       <collision name="collision">
         <geometry>
           <sphere><radius>0.45</radius></sphere>

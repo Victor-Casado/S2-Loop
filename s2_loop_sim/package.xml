@@ -1,4 +1,17 @@
 <?xml version="1.0"?>
+<!--
+  The package manifest. Every ROS 2 package has one, and it is how the
+  toolchain discovers the package, orders the build, and checks that what the
+  code imports is actually declared.
+
+  buildtool_depend is what builds the package. exec_depend is what it needs at
+  runtime. This package compiles nothing, so everything below is an exec
+  dependency, and each one maps to something imported by the Python files:
+  ament_index_python and launch_ros for the launch file, rclpy, geometry_msgs,
+  std_msgs and ros_gz_interfaces for the movement engine, ros_gz_sim for the
+  `create` tool that spawns models, ros_gz_bridge for the process that connects
+  ROS to Gazebo.
+-->
 <package format="3">
   <name>s2_loop_sim</name>
   <version>0.1.0</version>
@@ -14,6 +27,8 @@
   <exec_depend>ros_gz_interfaces</exec_depend>
   <exec_depend>ros_gz_sim</exec_depend>
   <exec_depend>std_msgs</exec_depend>
+  <!-- Tells colcon this package builds with ament_cmake, and points Gazebo at
+       the models directory so model:// URIs resolve. -->
   <export>
     <build_type>ament_cmake</build_type>
     <gazebo_model_path>models</gazebo_model_path>
