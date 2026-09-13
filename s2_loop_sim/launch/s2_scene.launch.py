@@ -1,13 +1,16 @@
-"""Start the simulation: Gazebo, the ROS/Gazebo bridge, the movement engine, and
-a freshly randomised set of obstacles and waypoints.
+"""Start Gazebo, the ROS/Gazebo bridge, the movement engine, and a random scene.
 
-A launch file is ROS 2's answer to a shell script that starts several processes
-at once. It does not start anything itself. `ros2 launch` imports this module,
-calls generate_launch_description(), and executes the list of actions it gets
-back. So the module-level Python here runs once, before any process exists,
-which is why the random layout can just be computed inline.
+`ros2 launch` imports this module, calls generate_launch_description(), and runs
+the actions it gets back; nothing here starts a process itself. So the module
+level code runs once, before anything exists, which is why the layout can be
+randomised inline.
 
-Every number this file uses lives in s2_loop_sim/constants.py.
+Paths come from the installed share/ tree rather than the source checkout.
+GZ_SIM_RESOURCE_PATH is what Gazebo searches to resolve the model:// URIs in the
+world file, so it is set before Gazebo starts. The bridge argument uses Gazebo's
+`endpoint@ros_type` form. Models cannot be created until Gazebo is up and there
+is no readiness signal to wait on, so SPAWN_DELAY is a guess; raise it if models
+ever go missing at startup.
 """
 import math
 import os
@@ -21,112 +24,74 @@ from launch_ros.actions import Node
 from s2_loop_sim.constants import (
     ARENA_HALF_SIZE,
     MIN_GAP,
-    SPAWNS,
-    SPAWN_DELAY,
+    PARKED_VEHICLE,
     SET_POSE_SERVICE,
-    VEHICLE_FOOTPRINT,
+    SPAWN_DELAY,
+    SPAWNS,
     WORLD_NAME,
+    Circle,
 )
 
 
-def claim_position(taken, radius):
-    """Pick a free spot in the arena, add it to `taken`, and return it.
+def overlaps(spot, other):
+    """True when two footprints leave less than MIN_GAP of clear ground between."""
+    return (math.hypot(spot.x - other.x, spot.y - other.y)
+            <= spot.radius + other.radius + MIN_GAP)
 
-    Mutating `taken` is the point: successive calls see everything placed so
-    far, which is what keeps the layout disjoint. Each entry is (x, y, radius).
 
-    This rejects and retries rather than solving for a layout. Fine for ten
-    objects in an 81 square metre arena, and it would not be for a thousand.
-    """
+def free_spot(taken, radius):
+    """A random footprint in the arena that overlaps nothing in `taken`."""
     while True:
-        x = random.uniform(-ARENA_HALF_SIZE, ARENA_HALF_SIZE)
-        y = random.uniform(-ARENA_HALF_SIZE, ARENA_HALF_SIZE)
+        spot = Circle(random.uniform(-ARENA_HALF_SIZE, ARENA_HALF_SIZE),
+                      random.uniform(-ARENA_HALF_SIZE, ARENA_HALF_SIZE),
+                      radius)
 
-        clear = all(
-            math.hypot(x - other_x, y - other_y) > radius + other_radius + MIN_GAP
-            for other_x, other_y, other_radius in taken)
-
-        if clear:
-            taken.append((x, y, radius))
-            return x, y
+        if not any(overlaps(spot, other) for other in taken):
+            return spot
 
 
 def random_layout():
-    """Yield (kind, index, x, y, z) for everything to spawn, nothing overlapping.
+    """Yield (spawn, index, spot) for every model to create, none overlapping."""
+    taken = [PARKED_VEHICLE]
 
-    The vehicle is already parked at the origin, so its footprint is reserved
-    before anything else is placed.
-    """
-    taken = [VEHICLE_FOOTPRINT]
-
-    for kind, count, radius, spawn_z in SPAWNS:
-        for index in range(1, count + 1):
-            x, y = claim_position(taken, radius)
-            yield kind, index, x, y, spawn_z
+    for spawn in SPAWNS:
+        for index in range(1, spawn.count + 1):
+            spot = free_spot(taken, spawn.radius)
+            taken.append(spot)
+            yield spawn, index, spot
 
 
-def spawn_action(models_path, kind, index, x, y, z):
-    """One model injected into the running world.
-
-    `create` is a one-shot command-line tool from ros_gz_sim: it adds a single
-    model to a world that is already up, then exits. Names have to be unique
-    within the world, hence the index suffix.
-    """
+def create_model(models_path, spawn, index, spot):
+    """`ros_gz_sim create` adds one model to the running world, then exits."""
     return Node(
         package='ros_gz_sim', executable='create',
         arguments=[
             '-world', WORLD_NAME,
-            '-file', os.path.join(models_path, kind, f'{kind}.sdf'),
-            '-name', f'{kind}_{index}',
-            '-x', str(x), '-y', str(y), '-z', str(z),
+            '-file', os.path.join(models_path, spawn.model, f'{spawn.model}.sdf'),
+            '-name', f'{spawn.model}_{index}',
+            '-x', str(spot.x), '-y', str(spot.y), '-z', str(spawn.z),
         ],
     )
 
 
 def generate_launch_description():
-    # colcon installs this package's launch, worlds and models directories into
-    # a share/ tree outside the source checkout, and this call is how you find
-    # that tree at runtime. Never read these files from the source directory.
     package_path = get_package_share_directory('s2_loop_sim')
     world_path = os.path.join(package_path, 'worlds', f'{WORLD_NAME}.sdf')
     models_path = os.path.join(package_path, 'models')
 
-    spawns = [
-        spawn_action(models_path, *placement) for placement in random_layout()
-    ]
-
-    # Actions start in the order listed, but each one only launches a process.
-    # Nothing here waits for anything else.
     return LaunchDescription([
 
-        # Gazebo resolves the model:// URIs in the world file by searching this
-        # path, so it has to be set before Gazebo starts.
         SetEnvironmentVariable('GZ_SIM_RESOURCE_PATH', models_path),
 
-        # Gazebo itself. ExecuteProcess runs any binary, unlike Node, which is
-        # for ROS nodes. -r starts physics running rather than paused, and
-        # output='screen' forwards Gazebo's logs to this terminal.
-        ExecuteProcess(
-            cmd=['gz', 'sim', '-r', world_path],
-            output='screen',
-        ),
+        ExecuteProcess(cmd=['gz', 'sim', '-r', world_path], output='screen'),
 
-        # Gazebo and ROS 2 use different, incompatible transports. This bridge
-        # process translates between them, and its argument says which endpoints
-        # to expose: the name before the @ is used on both sides, and the part
-        # after it is the ROS type to map that endpoint to. Without this line the
-        # movement engine's client has nothing to call.
-        Node(
-            package='ros_gz_bridge', executable='parameter_bridge',
-            arguments=[f'{SET_POSE_SERVICE}@ros_gz_interfaces/srv/SetEntityPose'],
-        ),
+        Node(package='ros_gz_bridge', executable='parameter_bridge',
+             arguments=[f'{SET_POSE_SERVICE}@ros_gz_interfaces/srv/SetEntityPose']),
 
-        # The movement engine. `executable` is the filename installed into
-        # lib/s2_loop_sim by CMakeLists.txt, extension included.
         Node(package='s2_loop_sim', executable='movement_engine.py'),
 
-        # Spawning has to wait for Gazebo to be up, and there is no readiness
-        # signal to wait on, so this is a timed guess.
-        TimerAction(period=SPAWN_DELAY, actions=spawns),
+        TimerAction(period=SPAWN_DELAY,
+                    actions=[create_model(models_path, *placement)
+                             for placement in random_layout()]),
 
     ])
