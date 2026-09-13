@@ -1,7 +1,30 @@
 <?xml version="1.0"?>
+<!--
+  The vehicle: a blue box with a red nose, and the only thing in the scene that
+  moves. SDF (Simulation Description Format) is the XML dialect Gazebo uses to
+  describe worlds and the things in them.
+
+  The nesting is model > link > visual/collision. A model is one object as a
+  whole. A link is one rigid body inside it; a model with wheels would have
+  several, this one has a single link called "body". Each link carries two
+  independent descriptions of its shape: <visual> is what the renderer draws,
+  <collision> is what the physics engine tests against. They are usually the
+  same shape, but nothing enforces that, and games often make collisions cruder
+  than visuals on purpose.
+
+  Units are metres, kilograms, radians. A <pose> is six numbers, "x y z roll
+  pitch yaw", relative to whatever contains it. Colours are RGBA, 0 to 1:
+  <ambient> is how the surface looks unlit, <diffuse> under direct light,
+  <specular> is the highlight.
+-->
 <sdf version="1.9">
   <model name="vehicle">
     <link name="body">
+      <!--
+        Mass and rotational inertia. The movement engine teleports this model
+        rather than pushing it, so these barely matter today. They are what the
+        physics engine would use if the vehicle were ever driven by forces.
+      -->
       <inertial>
         <mass>1.0</mass>
         <inertia>
@@ -10,6 +33,8 @@
           <izz>0.1</izz>
         </inertia>
       </inertial>
+      <!-- Main body: 0.8 m long (x), 0.5 m wide (y), 0.25 m tall (z), centred
+           on the link origin. Forward is +x. -->
       <visual name="visual">
         <geometry>
           <box>
@@ -22,6 +47,13 @@
           <specular>0.6 0.6 0.6 1.0</specular>
         </material>
       </visual>
+      <!--
+        The red nose, so heading is readable from any camera angle. Offset
+        0.525 m along +x puts it just past the front face of the body
+        (0.8 / 2 = 0.4, plus half of its own 0.25 length). It is a separate
+        visual rather than a painted face because a face is invisible from
+        behind.
+      -->
       <visual name="front">
         <pose>0.525 0 0 0 0 0</pose>
         <geometry>
@@ -32,6 +64,9 @@
           <diffuse>1.0 0.0 0.0 1.0</diffuse>
         </material>
       </visual>
+      <!-- Collision shapes matching the two visuals above. Nothing collides
+           with the vehicle while it is teleported, but these are what obstacle
+           contact will use once the vehicle is driven properly. -->
       <collision name="front_collision">
         <pose>0.525 0 0 0 0 0</pose>
         <geometry>

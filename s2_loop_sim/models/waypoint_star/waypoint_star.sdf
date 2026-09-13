@@ -1,4 +1,17 @@
 <?xml version="1.0"?>
+<!--
+  One waypoint marker. Five spawn at random positions each launch.
+
+  Purely decorative: it has a visual and no collision, so the vehicle drives
+  straight through it. Arriving at a waypoint will be decided by comparing
+  coordinates, not by touching anything.
+
+  Gazebo has no star primitive, so this is a <polyline>: a 2D outline in the xy
+  plane, extruded upward by <height>. The ten points are the outer and inner
+  vertices of a five pointed star, alternating, taken off circles of radius 0.5
+  and 0.2 at 36 degree steps. <emissive> adds a small amount of self-lit colour
+  so the star stays yellow even where nothing is lighting it.
+-->
 <sdf version="1.9">
   <model name="waypoint_star">
     <static>true</static>
