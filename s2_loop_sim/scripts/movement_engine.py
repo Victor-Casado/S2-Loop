@@ -36,6 +36,8 @@ class MovementEngine(Node):
         self.target_yaw = None
 
     def step(self):
+        if not self.client.service_is_ready():
+            return
         if self.target_yaw is not None:
             error = math.atan2(
                 math.sin(self.target_yaw - self.yaw),
@@ -57,8 +59,6 @@ class MovementEngine(Node):
         else:
             return
 
-        if not self.client.service_is_ready():
-            return
         request = SetEntityPose.Request()
         request.entity = Entity(name='vehicle', type=Entity.MODEL)
         request.pose = Pose()
