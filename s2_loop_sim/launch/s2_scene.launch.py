@@ -32,15 +32,15 @@ from s2_loop_sim.layout import random_layout, waypoint_coordinates
 
 def create_model(models_path, placement):
     """`ros_gz_sim create` adds one model to the running world, then exits."""
-    spawn, index, spot = placement
+    model, index, spot, z = placement
 
     return Node(
         package='ros_gz_sim', executable='create',
         arguments=[
             '-world', WORLD_NAME,
-            '-file', os.path.join(models_path, spawn.model, f'{spawn.model}.sdf'),
-            '-name', f'{spawn.model}_{index}',
-            '-x', str(spot.x), '-y', str(spot.y), '-z', str(spawn.z),
+            '-file', os.path.join(models_path, model, f'{model}.sdf'),
+            '-name', f'{model}_{index}',
+            '-x', str(spot.x), '-y', str(spot.y), '-z', str(z),
         ],
     )
 
