@@ -1,8 +1,9 @@
 <?xml version="1.0"?>
 <!--
-  The world: the empty stage everything else is placed on. Gazebo loads this
-  file at startup; the obstacles and waypoints are not here because the launch
-  file injects them afterwards at random positions.
+  The world: the stage everything else is placed on. The launch file copies
+  this to a temporary file with the randomised obstacles and waypoint stars
+  appended as <include> blocks, and points Gazebo at the copy, so this file
+  holds only what is the same on every run.
 
   See models/vehicle/vehicle.sdf for what model, link, visual and collision
   mean, and for the units and colour conventions used throughout.
