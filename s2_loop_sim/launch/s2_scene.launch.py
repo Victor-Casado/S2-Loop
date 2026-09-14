@@ -3,7 +3,8 @@
 `ros2 launch` imports this module, calls generate_launch_description(), and runs
 the actions it gets back; nothing here starts a process itself. So the module
 level code runs once, before anything exists, which is why the layout can be
-randomised inline.
+randomised inline. Where things go is decided by s2_loop_sim.layout; this file
+only turns that answer into actions.
 
 Paths come from the installed share/ tree rather than the source checkout.
 GZ_SIM_RESOURCE_PATH is what Gazebo searches to resolve the model:// URIs in the
@@ -12,71 +13,21 @@ world file, so it is set before Gazebo starts. The bridge argument uses Gazebo's
 is no readiness signal to wait on, so SPAWN_DELAY is a guess; raise it if models
 ever go missing at startup.
 """
-import math
 import os
-import random
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import ExecuteProcess, SetEnvironmentVariable, TimerAction
 from launch_ros.actions import Node
 
-from s2_loop_sim.constants import (
-    ARENA_HALF_SIZE,
-    MIN_GAP,
-    PARKED_VEHICLE,
-    SET_POSE_SERVICE,
-    SPAWN_DELAY,
-    SPAWNS,
-    WAYPOINT_MODEL,
-    WORLD_NAME,
-    Circle,
-)
+from s2_loop_sim.constants import SET_POSE_SERVICE, SPAWN_DELAY, WORLD_NAME
+from s2_loop_sim.layout import random_layout, waypoint_arguments
 
 
-def overlaps(spot, other):
-    """True when two footprints leave less than MIN_GAP of clear ground between."""
-    return (math.hypot(spot.x - other.x, spot.y - other.y)
-            <= spot.radius + other.radius + MIN_GAP)
-
-
-def free_spot(taken, radius):
-    """A random footprint in the arena that overlaps nothing in `taken`."""
-    while True:
-        spot = Circle(random.uniform(-ARENA_HALF_SIZE, ARENA_HALF_SIZE),
-                      random.uniform(-ARENA_HALF_SIZE, ARENA_HALF_SIZE),
-                      radius)
-
-        if not any(overlaps(spot, other) for other in taken):
-            return spot
-
-
-def random_layout():
-    """Return (spawn, index, spot) for every model to create, none overlapping."""
-    taken = [PARKED_VEHICLE]
-    placements = []
-
-    for spawn in SPAWNS:
-        for index in range(1, spawn.count + 1):
-            spot = free_spot(taken, spawn.radius)
-            taken.append(spot)
-            placements.append((spawn, index, spot))
-
-    return placements
-
-
-def waypoint_arguments(placements):
-    """Flatten the waypoint star positions into command-line arguments."""
-    arguments = []
-    for spawn, _, spot in placements:
-        if spawn.model == WAYPOINT_MODEL:
-            arguments += [str(spot.x), str(spot.y)]
-
-    return arguments
-
-
-def create_model(models_path, spawn, index, spot):
+def create_model(models_path, placement):
     """`ros_gz_sim create` adds one model to the running world, then exits."""
+    spawn, index, spot = placement
+
     return Node(
         package='ros_gz_sim', executable='create',
         arguments=[
@@ -104,7 +55,7 @@ def generate_launch_description():
              arguments=[f'{SET_POSE_SERVICE}@ros_gz_interfaces/srv/SetEntityPose']),
 
         TimerAction(period=SPAWN_DELAY,
-                    actions=[create_model(models_path, *placement)
+                    actions=[create_model(models_path, placement)
                              for placement in placements]),
 
         TimerAction(period=SPAWN_DELAY + 1.0,
