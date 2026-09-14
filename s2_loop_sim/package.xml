@@ -13,12 +13,13 @@
   ament_index_python and launch_ros for the launch file, rclpy, geometry_msgs,
   ros_gz_interfaces for the movement engine, ros_gz_sim for the `create` tool
   that spawns models, ros_gz_bridge for the process that connects ROS to Gazebo.
+
 -->
 <package format="3">
   <name>s2_loop_sim</name>
   <version>0.1.0</version>
   <description>S2 Loop simulation: vehicle, obstacles, and waypoint scene for Gazebo</description>
-  <maintainer email="user@example.com">user</maintainer>
+  <maintainer email="victor.casado.nyc@gmail.com">Victor Casado</maintainer>
   <license>MIT</license>
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
