@@ -23,35 +23,27 @@ class Circle(NamedTuple):
     radius: float
 
 
-class Spawn(NamedTuple):
-    """A kind of model to scatter around the arena at launch."""
+class Placement(NamedTuple):
+    """One model to create: which kind, which copy of it, where, and how high."""
 
     model: str
-    count: int
-    radius: float
+    index: int
+    spot: Circle
     z: float
 
 
-class Placement(NamedTuple):
-    """One model to create: which kind, which copy of it, and where."""
-
-    spawn: Spawn
-    index: int
-    spot: Circle
-
+OBSTACLE_MODEL = 'sphere_obstacle'
+OBSTACLE_COUNT = 5
 
 WAYPOINT_MODEL = 'waypoint_star'
+WAYPOINT_COUNT = 5
+WAYPOINT_RADIUS = 0.5
+WAYPOINT_Z = 0.06
 
 ARENA_HALF_SIZE = 4.5
 MIN_GAP = 0.3
 PARKED_VEHICLE = Circle(x=SDF_VEHICLE_START.x, y=SDF_VEHICLE_START.y,
                         radius=VEHICLE_RADIUS)
-
-SPAWNS = (
-    Spawn(model='sphere_obstacle', count=5,
-          radius=SDF_OBSTACLE_RADIUS, z=SDF_OBSTACLE_RADIUS),
-    Spawn(model=WAYPOINT_MODEL, count=5, radius=0.5, z=0.06),
-)
 
 
 def overlaps(spot, other):
@@ -71,18 +63,31 @@ def free_spot(taken, radius):
             return spot
 
 
+def scatter(taken, model, count, radius, z):
+    """`count` copies of `model`, on ground clear of everything in `taken`.
+
+    Appends what it places to `taken`, so a second call avoids the first.
+    """
+    placements = []
+
+    for index in range(1, count + 1):
+        spot = free_spot(taken, radius)
+        taken.append(spot)
+        placements.append(Placement(model, index, spot, z))
+
+    return placements
+
+
 def random_layout():
     """A Placement for every model to create, none of them overlapping."""
     taken = [PARKED_VEHICLE]
-    placements = []
 
-    for spawn in SPAWNS:
-        for index in range(1, spawn.count + 1):
-            spot = free_spot(taken, spawn.radius)
-            taken.append(spot)
-            placements.append(Placement(spawn, index, spot))
+    obstacles = scatter(taken, OBSTACLE_MODEL, OBSTACLE_COUNT,
+                        SDF_OBSTACLE_RADIUS, SDF_OBSTACLE_RADIUS)
+    waypoints = scatter(taken, WAYPOINT_MODEL, WAYPOINT_COUNT,
+                        WAYPOINT_RADIUS, WAYPOINT_Z)
 
-    return placements
+    return obstacles + waypoints
 
 
 def waypoint_coordinates(placements):
@@ -94,7 +99,7 @@ def waypoint_coordinates(placements):
     """
     coordinates = []
     for placement in placements:
-        if placement.spawn.model == WAYPOINT_MODEL:
+        if placement.model == WAYPOINT_MODEL:
             coordinates += [placement.spot.x, placement.spot.y]
 
     return coordinates
