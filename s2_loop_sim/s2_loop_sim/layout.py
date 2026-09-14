@@ -80,11 +80,24 @@ def random_layout():
     return placements
 
 
-def waypoint_arguments(placements):
-    """Flatten the waypoint star positions into command-line arguments."""
-    arguments = []
+def waypoint_coordinates(placements):
+    """The waypoint star positions, flattened to [x, y, x, y, ...] metres.
+
+    Flat rather than paired because that is the widest shape a ROS parameter
+    can carry: an array has to be all one scalar type. pair_coordinates is the
+    other half of the trip.
+    """
+    coordinates = []
     for placement in placements:
         if placement.spawn.model == WAYPOINT_MODEL:
-            arguments += [str(placement.spot.x), str(placement.spot.y)]
+            coordinates += [placement.spot.x, placement.spot.y]
 
-    return arguments
+    return coordinates
+
+
+def pair_coordinates(coordinates):
+    """Rebuild [(x, y), ...] from the flattened form waypoint_coordinates makes."""
+    if len(coordinates) % 2 != 0:
+        raise ValueError('waypoint coordinates must come in x y pairs')
+
+    return list(zip(coordinates[0::2], coordinates[1::2], strict=True))

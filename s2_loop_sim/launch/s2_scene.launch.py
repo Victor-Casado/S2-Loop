@@ -21,7 +21,7 @@ from launch.actions import ExecuteProcess, SetEnvironmentVariable, TimerAction
 from launch_ros.actions import Node
 
 from s2_loop_sim.constants import SET_POSE_SERVICE, SPAWN_DELAY, WORLD_NAME
-from s2_loop_sim.layout import random_layout, waypoint_arguments
+from s2_loop_sim.layout import random_layout, waypoint_coordinates
 
 
 def create_model(models_path, placement):
@@ -61,6 +61,7 @@ def generate_launch_description():
         TimerAction(period=SPAWN_DELAY + 1.0,
                     actions=[Node(package='s2_loop_sim',
                                   executable='movement_engine.py',
-                                  arguments=waypoint_arguments(placements))]),
+                                  parameters=[{'waypoints':
+                                               waypoint_coordinates(placements)}])]),
 
     ])
