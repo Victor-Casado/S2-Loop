@@ -55,6 +55,10 @@ class WaypointDriver(Node):
         """Start the next turn once startup or the previous drive is done."""
         if self.state != READY_TO_TURN or time.monotonic() < self.wait_until:
             return
+        if self.turn_publisher.get_subscription_count() == 0:
+            return
+        if self.move_publisher.get_subscription_count() == 0:
+            return
 
         self.turn_to_next_waypoint()
 
