@@ -41,6 +41,7 @@ from s2_loop_sim.layout import pair_coordinates
 
 WAYPOINTS_PARAMETER = 'waypoints'
 
+SEEKING = 'seeking'
 TURNING = 'turning'
 DRIVING = 'driving'
 DONE = 'done'
@@ -53,6 +54,10 @@ def yaw_to_quaternion(yaw):
 
 class MovementEngine(Node):
     """Turns toward each waypoint, drives to it, then starts the next one.
+
+    SEEKING picks the next waypoint and works out the turn and the distance,
+    TURNING spends the turn, DRIVING spends the distance, and arriving goes
+    back to SEEKING. DONE is where it ends up once the list runs out.
 
     Dead reckoning has to start from wherever the world file actually parked
     the vehicle, and nothing here ever checks, so both sides read the same
@@ -68,9 +73,9 @@ class MovementEngine(Node):
         self.y = SDF_VEHICLE_START.y
         self.yaw = SDF_VEHICLE_START.yaw
 
-        self.state = TURNING
-        self.target_yaw = None
-        self.remaining = None
+        self.state = SEEKING
+        self.target_yaw = self.yaw
+        self.remaining = 0.0
 
         self.client = self.create_client(SetEntityPose, SET_POSE_SERVICE)
         self.create_timer(CONTROL_PERIOD, self.step)
@@ -98,17 +103,15 @@ class MovementEngine(Node):
         if not self.client.service_is_ready():
             return
 
+        if self.state == SEEKING:
+            self.start_next_waypoint()
+
         if self.state == DONE:
             return
 
-        if self.target_yaw is None and self.remaining is None:
-            self.start_next_waypoint()
-            if self.state == DONE:
-                return
-
         if self.state == TURNING:
             self.turn_step()
-        elif self.state == DRIVING:
+        else:
             self.drive_step()
 
         self.publish_pose()
@@ -135,7 +138,6 @@ class MovementEngine(Node):
         self.yaw += capped(error, RADIANS_PER_TICK)
 
         if abs(error) <= RADIANS_PER_TICK:
-            self.target_yaw = None
             self.state = DRIVING
 
     def drive_step(self):
@@ -144,11 +146,10 @@ class MovementEngine(Node):
         self.x += math.cos(self.yaw) * distance
         self.y += math.sin(self.yaw) * distance
 
-        left = self.remaining - distance
-        self.remaining = None if is_negligible(left) else left
-        if self.remaining is None:
+        self.remaining -= distance
+        if is_negligible(self.remaining):
             self.next_waypoint += 1
-            self.state = TURNING
+            self.state = SEEKING
 
     def publish_pose(self):
         """Ask Gazebo to put the model where we now believe it is.
