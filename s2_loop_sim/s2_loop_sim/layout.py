@@ -8,7 +8,11 @@ import math
 import random
 from typing import NamedTuple
 
-from s2_loop_sim.constants import SDF_OBSTACLE_RADIUS
+from s2_loop_sim.constants import (
+    SDF_OBSTACLE_RADIUS,
+    SDF_VEHICLE_START,
+    VEHICLE_RADIUS,
+)
 
 
 class Circle(NamedTuple):
@@ -40,7 +44,8 @@ WAYPOINT_MODEL = 'waypoint_star'
 
 ARENA_HALF_SIZE = 4.5
 MIN_GAP = 0.3
-PARKED_VEHICLE = Circle(x=0.0, y=0.0, radius=0.5)
+PARKED_VEHICLE = Circle(x=SDF_VEHICLE_START.x, y=SDF_VEHICLE_START.y,
+                        radius=VEHICLE_RADIUS)
 
 SPAWNS = (
     Spawn(model='sphere_obstacle', count=5,

@@ -62,6 +62,11 @@
          is what the model is called in this world, and it is the name the
          movement engine addresses in its set_pose calls. It spawns slightly
          above the ground and drops the last few centimetres.
+
+         The x, y and yaw below are mirrored by SDF_VEHICLE_START in
+         constants.py, which is where the movement engine starts dead
+         reckoning from and where the layout reserves the parking space.
+         Move the vehicle here and that constant has to move too.
     -->
     <include>
       <uri>model://vehicle</uri>

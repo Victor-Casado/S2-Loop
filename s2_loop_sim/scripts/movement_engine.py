@@ -25,6 +25,7 @@ from s2_loop_sim.constants import (
     METRES_PER_TICK,
     RADIANS_PER_TICK,
     RIDE_HEIGHT,
+    SDF_VEHICLE_START,
     SET_POSE_SERVICE,
     VEHICLE_NAME,
 )
@@ -53,8 +54,9 @@ def yaw_to_quaternion(yaw):
 class MovementEngine(Node):
     """Turns toward each waypoint, drives to it, then starts the next one.
 
-    The pose below starts at the world origin facing +X, which the scene has to
-    actually match, since nothing here ever checks.
+    Dead reckoning has to start from wherever the world file actually parked
+    the vehicle, and nothing here ever checks, so both sides read the same
+    SDF_VEHICLE_START rather than each writing out a zero.
     """
 
     def __init__(self):
@@ -62,9 +64,9 @@ class MovementEngine(Node):
         self.waypoints = pair_coordinates(self.declared_waypoints())
         self.next_waypoint = 0
 
-        self.x = 0.0
-        self.y = 0.0
-        self.yaw = 0.0
+        self.x = SDF_VEHICLE_START.x
+        self.y = SDF_VEHICLE_START.y
+        self.yaw = SDF_VEHICLE_START.yaw
 
         self.state = TURNING
         self.target_yaw = None
