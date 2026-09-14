@@ -4,8 +4,6 @@ Names beginning SDF_ are copies of values written in the SDF files under
 models/ and worlds/. XML cannot import Python, so changing one means changing
 the other. Everything on the Python side reads the copy here, so the SDF file
 is the only other place any of these numbers appear.
-
-Anything only the scene layout cares about lives in layout.py instead.
 """
 import math
 from typing import NamedTuple
@@ -42,3 +40,20 @@ RADIANS_PER_TICK = ANGULAR_SPEED * CONTROL_PERIOD
 FLOAT_TOLERANCE = 1e-9
 
 MOVEMENT_START_DELAY = 3.0
+
+ARENA_HALF_SIZE = 4.5
+
+# One metre, which is what Gazebo's own ground grid draws, so every model
+# lands on a line the viewport already shows. The models are sized to fit:
+# the widest pair is VEHICLE_RADIUS 0.43 + WAYPOINT_RADIUS 0.30, leaving
+# 0.27 m of clear ground between neighbours. So nothing on one node can reach
+# anything on another, and no layout needs checking for overlaps.
+GRID_SPACING = 1.0
+
+OBSTACLE_MODEL = 'sphere_obstacle'
+OBSTACLE_COUNT = 25
+
+WAYPOINT_MODEL = 'waypoint_star'
+WAYPOINT_COUNT = 5
+WAYPOINT_RADIUS = 0.3
+WAYPOINT_Z = 0.06

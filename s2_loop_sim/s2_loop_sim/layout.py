@@ -8,9 +8,17 @@ import random
 from typing import NamedTuple
 
 from s2_loop_sim.constants import (
+    ARENA_HALF_SIZE,
+    GRID_SPACING,
+    OBSTACLE_COUNT,
+    OBSTACLE_MODEL,
     SDF_OBSTACLE_RADIUS,
     SDF_VEHICLE_START,
     VEHICLE_RADIUS,
+    WAYPOINT_COUNT,
+    WAYPOINT_MODEL,
+    WAYPOINT_RADIUS,
+    WAYPOINT_Z,
 )
 
 
@@ -30,23 +38,6 @@ class Placement(NamedTuple):
     spot: Circle
     z: float
 
-
-OBSTACLE_MODEL = 'sphere_obstacle'
-OBSTACLE_COUNT = 5
-
-WAYPOINT_MODEL = 'waypoint_star'
-WAYPOINT_COUNT = 5
-WAYPOINT_RADIUS = 0.3
-WAYPOINT_Z = 0.06
-
-ARENA_HALF_SIZE = 4.5
-
-# One metre, which is what Gazebo's own ground grid draws, so every model
-# lands on a line the viewport already shows. The models are sized to fit:
-# the widest pair is VEHICLE_RADIUS 0.43 + WAYPOINT_RADIUS 0.30, leaving
-# 0.27 m of clear ground between neighbours. So nothing on one node can reach
-# anything on another, and no layout needs checking for overlaps.
-GRID_SPACING = 1.0
 
 PARKED_VEHICLE = Circle(x=SDF_VEHICLE_START.x, y=SDF_VEHICLE_START.y,
                         radius=VEHICLE_RADIUS)
@@ -93,8 +84,8 @@ def random_layout():
     return obstacles + waypoints
 
 
-def waypoint_coordinates(placements):
-    """The waypoint star positions, flattened to [x, y, x, y, ...] metres.
+def model_coordinates(placements, model):
+    """The positions of every `model` placement, flattened to [x, y, ...] metres.
 
     Flat rather than paired because that is the widest shape a ROS parameter
     can carry: an array has to be all one scalar type. pair_coordinates is the
@@ -102,15 +93,56 @@ def waypoint_coordinates(placements):
     """
     coordinates = []
     for placement in placements:
-        if placement.model == WAYPOINT_MODEL:
+        if placement.model == model:
             coordinates += [placement.spot.x, placement.spot.y]
 
     return coordinates
 
 
+def free_cell_coordinates(placements):
+    """Every grid node without an obstacle on it, flattened to [x, y, ...].
+
+    Waypoint stars stay in: the vehicle has to reach them, so they must be
+    traversable. Only obstacle nodes come out. The movement engine rebuilds
+    its nav graph from this once at startup.
+    """
+    reach = int(ARENA_HALF_SIZE / GRID_SPACING)
+    blocked = {(placement.spot.x, placement.spot.y)
+               for placement in placements
+               if placement.model == OBSTACLE_MODEL}
+
+    coordinates = []
+    for step in range(-reach, reach + 1):
+        for row in range(-reach, reach + 1):
+            x, y = step * GRID_SPACING, row * GRID_SPACING
+            if (x, y) not in blocked:
+                coordinates += [x, y]
+
+    return coordinates
+
+
 def pair_coordinates(coordinates):
-    """Rebuild [(x, y), ...] from the flattened form waypoint_coordinates makes."""
+    """Rebuild [(x, y), ...] from the flattened form model_coordinates makes."""
     if len(coordinates) % 2 != 0:
         raise ValueError('waypoint coordinates must come in x y pairs')
 
     return list(zip(coordinates[0::2], coordinates[1::2], strict=True))
+
+
+def build_nav_graph(cells):
+    """An adjacency list over `cells`: {cell: [up to 4 free neighbours]}.
+
+    A neighbour only counts when it is itself in `cells`, so obstacle nodes
+    never become keys and never appear in any neighbour list. Anything absent
+    from the graph is untraversable, and A* exits early on it.
+    """
+    cell_set = set(cells)
+    graph = {}
+
+    for x, y in cell_set:
+        neighbours = [(x + GRID_SPACING, y), (x - GRID_SPACING, y),
+                      (x, y + GRID_SPACING), (x, y - GRID_SPACING)]
+        graph[(x, y)] = [neighbour for neighbour in neighbours
+                         if neighbour in cell_set]
+
+    return graph

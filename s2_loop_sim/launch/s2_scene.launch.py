@@ -19,8 +19,17 @@ from launch import LaunchDescription
 from launch.actions import ExecuteProcess, SetEnvironmentVariable, TimerAction
 from launch_ros.actions import Node
 
-from s2_loop_sim.constants import MOVEMENT_START_DELAY, SET_POSE_SERVICE, WORLD_NAME
-from s2_loop_sim.layout import random_layout, waypoint_coordinates
+from s2_loop_sim.constants import (
+    MOVEMENT_START_DELAY,
+    SET_POSE_SERVICE,
+    WAYPOINT_MODEL,
+    WORLD_NAME,
+)
+from s2_loop_sim.layout import (
+    free_cell_coordinates,
+    model_coordinates,
+    random_layout,
+)
 
 
 def randomised_world(world_path, placements):
@@ -74,7 +83,12 @@ def generate_launch_description():
         TimerAction(period=MOVEMENT_START_DELAY,
                     actions=[Node(package='s2_loop_sim',
                                   executable='movement_engine.py',
-                                  parameters=[{'waypoints':
-                                               waypoint_coordinates(placements)}])]),
+                                  parameters=[{
+                                      'waypoints':
+                                          model_coordinates(
+                                              placements, WAYPOINT_MODEL),
+                                      'free_cells':
+                                          free_cell_coordinates(placements),
+                                  }])]),
 
     ])

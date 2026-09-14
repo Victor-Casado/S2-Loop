@@ -11,6 +11,7 @@ tick, and teleports the model to match. Gazebo is never asked where the vehicle
 is, because nothing else moves it. Nothing here is physical, so the vehicle will
 drive through an obstacle until collision checks exist.
 """
+import heapq
 import math
 
 import rclpy
@@ -22,6 +23,7 @@ from ros_gz_interfaces.srv import SetEntityPose
 
 from s2_loop_sim.constants import (
     CONTROL_PERIOD,
+    GRID_SPACING,
     METRES_PER_TICK,
     RADIANS_PER_TICK,
     RIDE_HEIGHT,
@@ -34,16 +36,17 @@ from s2_loop_sim.geometry import (
     capped,
     distance_to,
     is_negligible,
+    nearest_cell,
     shortest_turn,
 )
-from s2_loop_sim.layout import pair_coordinates
+from s2_loop_sim.layout import build_nav_graph, pair_coordinates
 
 
 WAYPOINTS_PARAMETER = 'waypoints'
+FREE_CELLS_PARAMETER = 'free_cells'
 
 SEEKING = 'seeking'
-TURNING = 'turning'
-DRIVING = 'driving'
+FOLLOWING = 'following'
 DONE = 'done'
 
 
@@ -53,11 +56,12 @@ def rotation(yaw):
 
 
 class MovementEngine(Node):
-    """Turns toward each waypoint, drives to it, then starts the next one.
+    """Follow an A* cell path to each waypoint, then start the next one.
 
-    SEEKING picks the next waypoint and works out the turn and the distance,
-    TURNING spends the turn, DRIVING spends the distance, and arriving goes
-    back to SEEKING. DONE is where it ends up once the list runs out.
+    SEEKING plans the next leg and FOLLOWING walks it one cell at a time,
+    turning toward each cell then driving to it with the same tick helpers.
+    DONE is where it ends up once the list runs out or nothing is left
+    reachable.
 
     Dead reckoning has to start from wherever the world file actually parked
     the vehicle, and nothing here ever checks, so both sides read the same
@@ -67,7 +71,9 @@ class MovementEngine(Node):
     def __init__(self):
         super().__init__('movement_engine')
         self.waypoints = pair_coordinates(self.declared_waypoints())
+        self.graph = build_nav_graph(pair_coordinates(self.declared_free_cells()))
         self.next_waypoint = 0
+        self.cell_path = []
 
         self.x = SDF_VEHICLE_START.x
         self.y = SDF_VEHICLE_START.y
@@ -94,6 +100,14 @@ class MovementEngine(Node):
 
         return self.get_parameter_or(WAYPOINTS_PARAMETER, nothing_to_visit).value
 
+    def declared_free_cells(self):
+        """The flattened free grid nodes the launch file passed in."""
+        self.declare_parameter(FREE_CELLS_PARAMETER, Parameter.Type.DOUBLE_ARRAY)
+        nothing_free = Parameter(
+            FREE_CELLS_PARAMETER, Parameter.Type.DOUBLE_ARRAY, [])
+
+        return self.get_parameter_or(FREE_CELLS_PARAMETER, nothing_free).value
+
     def step(self):
         """Advance one tick and mirror the result into Gazebo.
 
@@ -109,36 +123,104 @@ class MovementEngine(Node):
         if self.state == DONE:
             return
 
-        if self.state == TURNING:
-            self.turn_step()
-        else:
-            self.drive_step()
+        if self.state == FOLLOWING:
+            error = shortest_turn(self.target_yaw - self.yaw)
+            if abs(error) > RADIANS_PER_TICK:
+                self.turn_step()
+            else:
+                self.drive_step()
+
+            if is_negligible(self.remaining):
+                self.cell_path.pop(0)
+                if self.cell_path:
+                    self.aim_at_next_cell()
+                else:
+                    self.next_waypoint += 1
+                    self.state = SEEKING
 
         self.publish_pose()
 
     def start_next_waypoint(self):
-        """Aim at the next waypoint, or stop when all have been visited."""
-        if self.next_waypoint >= len(self.waypoints):
-            self.get_logger().info('Visited every waypoint star')
-            self.state = DONE
+        """Plan the A* leg to the next waypoint, skipping it when unreachable."""
+        while self.next_waypoint < len(self.waypoints):
+            target = self.waypoints[self.next_waypoint]
+            start = nearest_cell(self.x, self.y, self.graph)
+            path = self.astar_path(start, target) if start else None
+
+            if path is None:
+                self.get_logger().info(
+                    f'Waypoint {self.next_waypoint + 1}: unreachable, skipping')
+                self.next_waypoint += 1
+                continue
+
+            self.cell_path = path[1:]
+            if not self.cell_path:
+                self.get_logger().info(
+                    f'Waypoint {self.next_waypoint + 1}: already there')
+                self.next_waypoint += 1
+                continue
+            self.aim_at_next_cell()
+            self.state = FOLLOWING
+            self.get_logger().info(
+                f'Waypoint {self.next_waypoint + 1}: '
+                f'{len(self.cell_path)} cells via A*')
             return
 
-        target_x, target_y = self.waypoints[self.next_waypoint]
+        self.get_logger().info('Visited every reachable waypoint star')
+        self.state = DONE
+
+    def astar_path(self, start, goal):
+        """The shortest cell path from `start` to `goal`, or None when unreachable.
+
+        Every edge costs one and the grid is axis aligned, so the Manhattan
+        distance in steps is the heuristic. Either endpoint missing from the
+        graph means an obstacle sits on it, and there is nothing to search.
+        """
+        if start not in self.graph or goal not in self.graph:
+            return None
+
+        def steps(cell):
+            return ((abs(cell[0] - goal[0]) + abs(cell[1] - goal[1]))
+                    / GRID_SPACING)
+
+        open_cells = [(steps(start), 0, start)]
+        came_from = {start: None}
+        cost = {start: 0}
+
+        while open_cells:
+            _, current_cost, current = heapq.heappop(open_cells)
+
+            if current == goal:
+                path = []
+                while current is not None:
+                    path.append(current)
+                    current = came_from[current]
+                path.reverse()
+                return path
+
+            if current_cost > cost[current]:
+                continue
+
+            for neighbour in self.graph[current]:
+                next_cost = current_cost + 1
+                if neighbour not in cost or next_cost < cost[neighbour]:
+                    cost[neighbour] = next_cost
+                    came_from[neighbour] = current
+                    heapq.heappush(open_cells, (next_cost + steps(neighbour),
+                                                next_cost, neighbour))
+
+        return None
+
+    def aim_at_next_cell(self):
+        """Face the next cell on the leg and measure the drive to it."""
+        target_x, target_y = self.cell_path[0]
         self.target_yaw = angle_to(self.x, self.y, target_x, target_y)
         self.remaining = distance_to(self.x, self.y, target_x, target_y)
-        self.state = TURNING
-
-        self.get_logger().info(
-            f'Waypoint {self.next_waypoint + 1}: '
-            f'turn={self.target_yaw:.2f} rad, drive={self.remaining:.2f} m')
 
     def turn_step(self):
         """Rotate one tick's worth toward the target heading."""
         error = shortest_turn(self.target_yaw - self.yaw)
         self.yaw += capped(error, RADIANS_PER_TICK)
-
-        if abs(error) <= RADIANS_PER_TICK:
-            self.state = DRIVING
 
     def drive_step(self):
         """Travel one tick's worth along the current heading."""
@@ -147,9 +229,6 @@ class MovementEngine(Node):
         self.y += math.sin(self.yaw) * distance
 
         self.remaining -= distance
-        if is_negligible(self.remaining):
-            self.next_waypoint += 1
-            self.state = SEEKING
 
     def publish_pose(self):
         """Ask Gazebo to put the model where we now believe it is.
