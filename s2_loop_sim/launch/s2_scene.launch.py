@@ -65,14 +65,14 @@ def random_layout():
     return placements
 
 
-def star_coordinates(placements):
+def waypoint_arguments(placements):
     """Flatten the waypoint star positions into command-line arguments."""
-    coordinates = []
+    arguments = []
     for spawn, _, spot in placements:
         if spawn.model == WAYPOINT_MODEL:
-            coordinates += [str(spot.x), str(spot.y)]
+            arguments += [str(spot.x), str(spot.y)]
 
-    return coordinates
+    return arguments
 
 
 def create_model(models_path, spawn, index, spot):
@@ -103,15 +103,13 @@ def generate_launch_description():
         Node(package='ros_gz_bridge', executable='parameter_bridge',
              arguments=[f'{SET_POSE_SERVICE}@ros_gz_interfaces/srv/SetEntityPose']),
 
-        Node(package='s2_loop_sim', executable='movement_engine.py'),
-
         TimerAction(period=SPAWN_DELAY,
                     actions=[create_model(models_path, *placement)
                              for placement in placements]),
 
-        TimerAction(period=SPAWN_DELAY,
+        TimerAction(period=SPAWN_DELAY + 1.0,
                     actions=[Node(package='s2_loop_sim',
-                                  executable='waypoint_driver.py',
-                                  arguments=star_coordinates(placements))]),
+                                  executable='movement_engine.py',
+                                  arguments=waypoint_arguments(placements))]),
 
     ])

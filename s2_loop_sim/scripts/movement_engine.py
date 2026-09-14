@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""Drive the Gazebo vehicle in response to /turnto and /moveforward.
+"""Drive the Gazebo vehicle through waypoint coordinates.
 
 Gazebo is the physics simulator that owns the 3D world. ROS 2 is a separate
-message-passing framework, connected to Gazebo by a bridge process. A ROS 2 node
-is one participant on that network, and this file is a single node. Nodes talk
-over topics, which are named broadcast channels with no reply, and services,
-which are request/response calls. Float64, Pose, Entity and SetEntityPose are
-classes generated from schema files rather than written by hand.
+message-passing framework, connected to Gazebo by a bridge process. This file
+is one ROS 2 node. The SetEntityPose service is a request/response call that
+sets the model pose in Gazebo.
 
 This node dead reckons. It keeps its own pose, advances it one small step per
 tick, and teleports the model to match. Gazebo is never asked where the vehicle
@@ -14,27 +12,30 @@ is, because nothing else moves it. Nothing here is physical, so the vehicle will
 drive through an obstacle until collision checks exist.
 """
 import math
+import sys
 
 import rclpy
 from geometry_msgs.msg import Point, Pose, Quaternion
 from rclpy.node import Node
 from ros_gz_interfaces.msg import Entity
 from ros_gz_interfaces.srv import SetEntityPose
-from std_msgs.msg import Empty, Float64
+from rclpy.utilities import remove_ros_args
 
 from s2_loop_sim.constants import (
-    COMMAND_QUEUE_DEPTH,
     CONTROL_PERIOD,
     FLOAT_TOLERANCE,
     METRES_PER_TICK,
-    MOVEMENT_DONE_TOPIC,
-    MOVE_TOPIC,
     RADIANS_PER_TICK,
     RIDE_HEIGHT,
     SET_POSE_SERVICE,
-    TURN_TOPIC,
     VEHICLE_NAME,
 )
+from s2_loop_sim.geometry import angle_to, distance_to
+
+
+TURNING = 'turning'
+DRIVING = 'driving'
+DONE = 'done'
 
 
 def shortest_turn(angle):
@@ -58,46 +59,27 @@ def yaw_to_quaternion(yaw):
 
 
 class MovementEngine(Node):
-    """Runs one movement command at a time, a tick at a time.
+    """Turns toward each waypoint, drives to it, then starts the next one.
 
-    A set `target_yaw` means a turn is running and a set `remaining` means a
-    drive is; both None means idle. Starting either command abandons the other.
     The pose below starts at the world origin facing +X, which the scene has to
     actually match, since nothing here ever checks.
     """
 
-    def __init__(self):
+    def __init__(self, waypoints):
         super().__init__('movement_engine')
+        self.waypoints = waypoints
+        self.next_waypoint = 0
 
         self.x = 0.0
         self.y = 0.0
         self.yaw = 0.0
 
+        self.state = TURNING
         self.target_yaw = None
         self.remaining = None
 
         self.client = self.create_client(SetEntityPose, SET_POSE_SERVICE)
-        self.done_publisher = self.create_publisher(
-            Empty, MOVEMENT_DONE_TOPIC, COMMAND_QUEUE_DEPTH)
-
-        self.create_subscription(
-            Float64, TURN_TOPIC,
-            lambda message: self.turnto(message.data), COMMAND_QUEUE_DEPTH)
-        self.create_subscription(
-            Float64, MOVE_TOPIC,
-            lambda message: self.moveforward(message.data), COMMAND_QUEUE_DEPTH)
-
         self.create_timer(CONTROL_PERIOD, self.step)
-
-    def turnto(self, angle):
-        """Rotate in place until facing `angle`. Absolute heading, not relative."""
-        self.target_yaw = angle
-        self.remaining = None
-
-    def moveforward(self, distance):
-        """Drive `distance` metres along the current heading; negative reverses."""
-        self.remaining = distance
-        self.target_yaw = None
 
     def step(self):
         """Advance one tick and mirror the result into Gazebo.
@@ -108,17 +90,36 @@ class MovementEngine(Node):
         if not self.client.service_is_ready():
             return
 
-        done = False
-        if self.target_yaw is not None:
-            done = self.turn_step()
-        elif self.remaining is not None:
-            done = self.drive_step()
-        else:
+        if self.state == DONE:
             return
 
+        if self.target_yaw is None and self.remaining is None:
+            self.start_next_waypoint()
+            if self.state == DONE:
+                return
+
+        if self.state == TURNING:
+            self.turn_step()
+        elif self.state == DRIVING:
+            self.drive_step()
+
         self.publish_pose()
-        if done:
-            self.done_publisher.publish(Empty())
+
+    def start_next_waypoint(self):
+        """Aim at the next waypoint, or stop when all have been visited."""
+        if self.next_waypoint >= len(self.waypoints):
+            self.get_logger().info('Visited every waypoint star')
+            self.state = DONE
+            return
+
+        target_x, target_y = self.waypoints[self.next_waypoint]
+        self.target_yaw = angle_to(self.x, self.y, target_x, target_y)
+        self.remaining = distance_to(self.x, self.y, target_x, target_y)
+        self.state = TURNING
+
+        self.get_logger().info(
+            f'Waypoint {self.next_waypoint + 1}: '
+            f'turn={self.target_yaw:.2f} rad, drive={self.remaining:.2f} m')
 
     def turn_step(self):
         """Rotate one tick's worth toward the target heading."""
@@ -127,9 +128,7 @@ class MovementEngine(Node):
 
         if abs(error) <= RADIANS_PER_TICK:
             self.target_yaw = None
-            return True
-
-        return False
+            self.state = DRIVING
 
     def drive_step(self):
         """Travel one tick's worth along the current heading."""
@@ -139,7 +138,9 @@ class MovementEngine(Node):
 
         left = self.remaining - distance
         self.remaining = None if is_negligible(left) else left
-        return self.remaining is None
+        if self.remaining is None:
+            self.next_waypoint += 1
+            self.state = TURNING
 
     def publish_pose(self):
         """Ask Gazebo to put the model where we now believe it is.
@@ -164,8 +165,18 @@ def main():
     callbacks overlap and none of the state needs a lock.
     """
     rclpy.init()
-    rclpy.spin(MovementEngine())
+    waypoint_args = remove_ros_args(args=sys.argv)[1:]
+    rclpy.spin(MovementEngine(parse_waypoints(waypoint_args)))
     rclpy.shutdown()
+
+
+def parse_waypoints(arguments):
+    """Convert command-line numbers into [(x, y), ...] waypoint pairs."""
+    if len(arguments) % 2 != 0:
+        raise ValueError('waypoints must be passed as x y pairs')
+
+    numbers = [float(argument) for argument in arguments]
+    return list(zip(numbers[0::2], numbers[1::2], strict=True))
 
 
 if __name__ == '__main__':
