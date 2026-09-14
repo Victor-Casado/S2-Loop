@@ -14,7 +14,7 @@ def parse_waypoints(arguments):
         raise ValueError('waypoints must be passed as x y pairs')
 
     numbers = [float(argument) for argument in arguments]
-    return list(zip(numbers[0::2], numbers[1::2]))
+    return list(zip(numbers[0::2], numbers[1::2], strict=True))
 
 
 def waypoint_arguments(args):
