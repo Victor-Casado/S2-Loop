@@ -36,16 +36,17 @@ OBSTACLE_COUNT = 5
 
 WAYPOINT_MODEL = 'waypoint_star'
 WAYPOINT_COUNT = 5
-WAYPOINT_RADIUS = 0.5
+WAYPOINT_RADIUS = 0.3
 WAYPOINT_Z = 0.06
 
 ARENA_HALF_SIZE = 4.5
 
-# Wider than the two largest footprints put together, with room to spare:
-# VEHICLE_RADIUS 0.70 + WAYPOINT_RADIUS 0.50 leaves 0.30 m of clear ground
-# between neighbours. So nothing on one node can reach anything on another,
-# and no layout needs checking for overlaps.
-GRID_SPACING = 1.5
+# One metre, which is what Gazebo's own ground grid draws, so every model
+# lands on a line the viewport already shows. The models are sized to fit:
+# the widest pair is VEHICLE_RADIUS 0.43 + WAYPOINT_RADIUS 0.30, leaving
+# 0.27 m of clear ground between neighbours. So nothing on one node can reach
+# anything on another, and no layout needs checking for overlaps.
+GRID_SPACING = 1.0
 
 PARKED_VEHICLE = Circle(x=SDF_VEHICLE_START.x, y=SDF_VEHICLE_START.y,
                         radius=VEHICLE_RADIUS)
