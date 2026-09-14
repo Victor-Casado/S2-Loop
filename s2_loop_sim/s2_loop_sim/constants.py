@@ -25,7 +25,7 @@ SET_POSE_SERVICE = f'/world/{WORLD_NAME}/set_pose'
 SDF_VEHICLE_BODY_HEIGHT = 0.15
 SDF_VEHICLE_BODY_WIDTH = 0.4
 SDF_VEHICLE_NOSE_TIP = 0.45
-SDF_OBSTACLE_RADIUS = 0.5
+SDF_OBSTACLE_RADIUS = 0.4
 
 SDF_VEHICLE_START = Pose2D(x=0.0, y=0.0, yaw=0.0)
 
@@ -44,9 +44,10 @@ MOVEMENT_START_DELAY = 3.0
 ARENA_HALF_SIZE = 4.5
 
 # One metre, which is what Gazebo's own ground grid draws, so every model
-# lands on a line the viewport already shows. Obstacles fill their cell, and
-# the vehicle's nose reaches 0.45 m from its origin, so neighbours touch
-# but never overlap, and no layout needs checking for overlaps.
+# lands on a line the viewport already shows. The widest pair on adjacent
+# nodes is the vehicle nose (0.45 m reach) plus an obstacle (0.40 m), which
+# still leaves clear ground between them, so no layout needs checking for
+# overlaps.
 GRID_SPACING = 1.0
 
 OBSTACLE_MODEL = 'sphere_obstacle'
@@ -54,11 +55,11 @@ OBSTACLE_COUNT = 25
 
 WAYPOINT_MODEL = 'waypoint_star'
 WAYPOINT_COUNT = 5
-WAYPOINT_RADIUS = 0.2
+WAYPOINT_RADIUS = 0.4
 WAYPOINT_Z = 0.06
 
 # Overlay stars marking the active (green) and unreachable (red) waypoints.
-# Concentric with the yellow star: green 0.3 and red 0.4 outer radii, each
+# Concentric with the yellow star: green 0.41 and red 0.42 outer radii, each
 # raised a centimetre so stacked polys never z-fight.
 GREEN_MODEL = 'waypoint_star_green'
 GREEN_Z = 0.07

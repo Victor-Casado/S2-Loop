@@ -1,9 +1,10 @@
 <?xml version="1.0"?>
 <!--
   The active waypoint marker: a green star, concentric with but larger than
-  the yellow waypoint star (outer radius 0.3 over 0.2), so teleporting it
+  the yellow waypoint star (outer radius 0.41 over 0.40), so teleporting it
   on top reads as a recolor with a yellow centre. Same star geometry as
   waypoint_star.sdf, scaled up one step; visual-only, no collision.
+  Height 0.61 stays a centimetre above the yellow extrusion.
 -->
 <sdf version="1.9">
   <model name="waypoint_star_green">
@@ -12,17 +13,17 @@
       <visual name="visual">
         <geometry>
           <polyline>
-            <height>0.12</height>
-            <point>0.000000 0.300000</point>
-            <point>0.070534 0.097082</point>
-            <point>0.285317 0.092705</point>
-            <point>0.114127 -0.037082</point>
-            <point>0.176336 -0.242705</point>
-            <point>0.000000 -0.120000</point>
-            <point>-0.176336 -0.242705</point>
-            <point>-0.114127 -0.037082</point>
-            <point>-0.285317 0.092705</point>
-            <point>-0.070534 0.097082</point>
+            <height>0.61</height>
+            <point>0.000000 0.410000</point>
+            <point>0.096396 0.132679</point>
+            <point>0.389933 0.126697</point>
+            <point>0.155974 -0.050679</point>
+            <point>0.240993 -0.331697</point>
+            <point>0.000000 -0.164000</point>
+            <point>-0.240993 -0.331697</point>
+            <point>-0.155974 -0.050679</point>
+            <point>-0.389933 0.126697</point>
+            <point>-0.096396 0.132679</point>
           </polyline>
         </geometry>
         <material>
