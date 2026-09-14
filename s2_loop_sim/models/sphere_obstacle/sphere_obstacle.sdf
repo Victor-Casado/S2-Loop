@@ -3,8 +3,8 @@
   One obstacle. A ring of these walls the arena off at the launches'
   request, with the randomised remainder scattered on grid nodes inside.
 
-  Radius 0.5 fills the 1 m grid cell around the node: a neighbour's model
-  can touch it, but never overlaps it.
+  Radius 0.4: neighbours on adjacent nodes leave 0.2 m of clear ground
+  between them, and the vehicle nose (0.45 m reach) still clears one.
 
   <static>true</static> tells the physics engine to skip simulating this body:
   it never falls, never gets pushed, and costs nothing per step. Other things
@@ -17,7 +17,7 @@
     <link name="body">
       <visual name="visual">
         <geometry>
-          <sphere><radius>0.5</radius></sphere>
+          <sphere><radius>0.4</radius></sphere>
         </geometry>
         <material>
           <ambient>0.8 0.15 0.1 1.0</ambient>
@@ -28,7 +28,7 @@
       <!-- Same radius as the visual, so what you see is what you hit. -->
       <collision name="collision">
         <geometry>
-          <sphere><radius>0.5</radius></sphere>
+          <sphere><radius>0.4</radius></sphere>
         </geometry>
       </collision>
     </link>

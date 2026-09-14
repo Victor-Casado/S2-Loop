@@ -89,22 +89,21 @@ def random_layout():
 
 
 def marker_parking():
-    """The overlay stars' parking spots, off the map past the arena wall.
+    """The overlay stars' parking spots, well off the map past the arena wall.
 
     Five reds, one per waypoint index, plus one shared green. They have
     to exist in the world before the movement engine can set_pose them
-    anywhere. Parked at x = -6, past the -5 wall ring, spread along y so
-    no two overlap: hidden from the driver and the default camera view.
+    anywhere. Parked at x = -10, five cells past the wall ring and out of
+    the default camera view, spread along y so no two overlap.
     """
+    park_x = -10 * GRID_SPACING
     parked = []
     for index in range(1, WAYPOINT_COUNT + 1):
         parked.append(Placement(RED_MODEL, index,
-                                Circle(-ARENA_HALF_SIZE - GRID_SPACING,
-                                       -index * GRID_SPACING, 0.0),
+                                Circle(park_x, -index * GRID_SPACING, 0.0),
                                 RED_Z))
     parked.append(Placement(GREEN_MODEL, 1,
-                            Circle(-ARENA_HALF_SIZE - GRID_SPACING,
-                                   0.0, 0.0),
+                            Circle(park_x, 0.0, 0.0),
                             GREEN_Z))
     return parked
 
