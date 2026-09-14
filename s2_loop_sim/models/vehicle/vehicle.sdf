@@ -33,12 +33,13 @@
           <izz>0.1</izz>
         </inertia>
       </inertial>
-      <!-- Main body: 0.8 m long (x), 0.5 m wide (y), 0.25 m tall (z), centred
-           on the link origin. Forward is +x. -->
+      <!-- Main body: 0.5 m long (x), 0.3 m wide (y), 0.15 m tall (z), centred
+           on the link origin. Forward is +x. Sized so the whole vehicle fits
+           inside one cell of the grid the scene is laid out on. -->
       <visual name="visual">
         <geometry>
           <box>
-            <size>0.8 0.5 0.25</size>
+            <size>0.5 0.3 0.15</size>
           </box>
         </geometry>
         <material>
@@ -49,15 +50,15 @@
       </visual>
       <!--
         The red nose, so heading is readable from any camera angle. Offset
-        0.525 m along +x puts it just past the front face of the body
-        (0.8 / 2 = 0.4, plus half of its own 0.25 length). It is a separate
+        0.325 m along +x puts it just past the front face of the body
+        (0.5 / 2 = 0.25, plus half of its own 0.15 length). It is a separate
         visual rather than a painted face because a face is invisible from
         behind.
       -->
       <visual name="front">
-        <pose>0.525 0 0 0 0 0</pose>
+        <pose>0.325 0 0 0 0 0</pose>
         <geometry>
-          <box><size>0.25 0.36 0.18</size></box>
+          <box><size>0.15 0.22 0.11</size></box>
         </geometry>
         <material>
           <ambient>0.8 0.0 0.0 1.0</ambient>
@@ -68,15 +69,15 @@
            with the vehicle while it is teleported, but these are what obstacle
            contact will use once the vehicle is driven properly. -->
       <collision name="front_collision">
-        <pose>0.525 0 0 0 0 0</pose>
+        <pose>0.325 0 0 0 0 0</pose>
         <geometry>
-          <box><size>0.25 0.36 0.18</size></box>
+          <box><size>0.15 0.22 0.11</size></box>
         </geometry>
       </collision>
       <collision name="collision">
         <geometry>
           <box>
-            <size>0.8 0.5 0.25</size>
+            <size>0.5 0.3 0.15</size>
           </box>
         </geometry>
       </collision>

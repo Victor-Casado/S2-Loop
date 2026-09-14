@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-  One waypoint marker. Five spawn at random positions each launch.
+  One waypoint marker. Five are placed on grid nodes each launch.
 
   Purely decorative: it has a visual and no collision, so the vehicle drives
   straight through it. Arriving at a waypoint will be decided by comparing
@@ -8,9 +8,10 @@
 
   Gazebo has no star primitive, so this is a <polyline>: a 2D outline in the xy
   plane, extruded upward by <height>. The ten points are the outer and inner
-  vertices of a five pointed star, alternating, taken off circles of radius 0.5
-  and 0.2 at 36 degree steps. <emissive> adds a small amount of self-lit colour
-  so the star stays yellow even where nothing is lighting it.
+  vertices of a five pointed star, alternating, taken off circles of radius 0.3
+  and 0.12 at 36 degree steps, which keeps the star inside one grid cell.
+  <emissive> adds a small amount of self-lit colour so the star stays yellow
+  even where nothing is lighting it.
 -->
 <sdf version="1.9">
   <model name="waypoint_star">
@@ -20,16 +21,16 @@
         <geometry>
           <polyline>
             <height>0.12</height>
-            <point>0.000000 0.500000</point>
-            <point>0.117557 0.161803</point>
-            <point>0.475528 0.154508</point>
-            <point>0.190211 -0.061803</point>
-            <point>0.293893 -0.404508</point>
-            <point>0.000000 -0.200000</point>
-            <point>-0.293893 -0.404508</point>
-            <point>-0.190211 -0.061803</point>
-            <point>-0.475528 0.154508</point>
-            <point>-0.117557 0.161803</point>
+            <point>0.000000 0.300000</point>
+            <point>0.070534 0.097082</point>
+            <point>0.285317 0.092705</point>
+            <point>0.114127 -0.037082</point>
+            <point>0.176336 -0.242705</point>
+            <point>0.000000 -0.120000</point>
+            <point>-0.176336 -0.242705</point>
+            <point>-0.114127 -0.037082</point>
+            <point>-0.285317 0.092705</point>
+            <point>-0.070534 0.097082</point>
           </polyline>
         </geometry>
         <material>
