@@ -87,6 +87,9 @@ class WaypointDriver(Node):
         self.distance = distance_to(
             self.x, self.y, self.target_x, self.target_y)
 
+        self.get_logger().info(
+            f'Turning toward waypoint {self.next_waypoint + 1}: '
+            f'heading={self.target_yaw:.2f} rad')
         self.turn_publisher.publish(Float64(data=self.target_yaw))
         self.state = READY_TO_DRIVE
         self.wait_until = time.monotonic() + wait_for_turn(
@@ -94,6 +97,9 @@ class WaypointDriver(Node):
 
     def drive_to_waypoint(self):
         """Publish the drive command, then queue the next star."""
+        self.get_logger().info(
+            f'Driving to waypoint {self.next_waypoint + 1}: '
+            f'distance={self.distance:.2f} m')
         self.move_publisher.publish(Float64(data=self.distance))
 
         self.x = self.target_x
