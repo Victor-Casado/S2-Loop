@@ -28,6 +28,7 @@ from s2_loop_sim.constants import (
     SET_POSE_SERVICE,
     SPAWN_DELAY,
     SPAWNS,
+    WAYPOINT_MODEL,
     WORLD_NAME,
     Circle,
 )
@@ -68,7 +69,7 @@ def star_coordinates(placements):
     """Flatten the waypoint star positions into command-line arguments."""
     coordinates = []
     for spawn, _, spot in placements:
-        if spawn.model == 'waypoint_star':
+        if spawn.model == WAYPOINT_MODEL:
             coordinates += [str(spot.x), str(spot.y)]
 
     return coordinates

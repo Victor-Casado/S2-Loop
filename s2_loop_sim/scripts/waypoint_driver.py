@@ -14,15 +14,21 @@ def parse_waypoints(arguments):
         raise ValueError('waypoints must be passed as x y pairs')
 
     numbers = [float(argument) for argument in arguments]
-    return list(zip(numbers[0::2], numbers[1::2]))
+    return list(zip(numbers[0::2], numbers[1::2], strict=True))
+
+
+def waypoint_arguments(args):
+    """Command-line arguments meant for this script, not ROS itself."""
+    if args is None:
+        return remove_ros_args(args=sys.argv)[1:]
+
+    return remove_ros_args(args=['waypoint_driver.py', *args])[1:]
 
 
 def main(args=None):
     """Start the waypoint driver node."""
-    raw_args = sys.argv if args is None else ['waypoint_driver.py', *args]
-    waypoint_args = remove_ros_args(args=raw_args)[1:]
     rclpy.init()
-    rclpy.spin(WaypointDriver(parse_waypoints(waypoint_args)))
+    rclpy.spin(WaypointDriver(parse_waypoints(waypoint_arguments(args))))
     if rclpy.ok():
         rclpy.shutdown()
 

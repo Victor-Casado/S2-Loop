@@ -25,6 +25,7 @@ class Spawn(NamedTuple):
 
 WORLD_NAME = 's2_scene'
 VEHICLE_NAME = 'vehicle'
+WAYPOINT_MODEL = 'waypoint_star'
 
 SET_POSE_SERVICE = f'/world/{WORLD_NAME}/set_pose'
 TURN_TOPIC = '/turnto'
@@ -51,5 +52,5 @@ PARKED_VEHICLE = Circle(x=0.0, y=0.0, radius=0.5)
 SPAWNS = (
     Spawn(model='sphere_obstacle', count=5,
           radius=SDF_OBSTACLE_RADIUS, z=SDF_OBSTACLE_RADIUS),
-    Spawn(model='waypoint_star', count=5, radius=0.5, z=0.06),
+    Spawn(model=WAYPOINT_MODEL, count=5, radius=0.5, z=0.06),
 )

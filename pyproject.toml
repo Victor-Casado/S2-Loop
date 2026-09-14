@@ -1,0 +1,9 @@
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "UP", "B", "SIM", "C4", "RET", "ARG"]
+ignore = [
+    "ARG002", # ROS callbacks often receive unused message arguments.
+]
