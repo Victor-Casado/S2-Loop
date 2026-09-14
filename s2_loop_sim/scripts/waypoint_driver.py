@@ -3,6 +3,7 @@
 import sys
 
 import rclpy
+from rclpy.utilities import remove_ros_args
 
 from s2_loop_sim.waypoint_navigation import WaypointDriver
 
@@ -18,7 +19,8 @@ def parse_waypoints(arguments):
 
 def main(args=None):
     """Start the waypoint driver node."""
-    waypoint_args = sys.argv[1:] if args is None else args
+    raw_args = sys.argv if args is None else ['waypoint_driver.py', *args]
+    waypoint_args = remove_ros_args(args=raw_args)[1:]
     rclpy.init()
     rclpy.spin(WaypointDriver(parse_waypoints(waypoint_args)))
     if rclpy.ok():
