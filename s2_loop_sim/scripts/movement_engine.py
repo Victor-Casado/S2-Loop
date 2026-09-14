@@ -23,34 +23,24 @@ from rclpy.utilities import remove_ros_args
 
 from s2_loop_sim.constants import (
     CONTROL_PERIOD,
-    FLOAT_TOLERANCE,
     METRES_PER_TICK,
     RADIANS_PER_TICK,
     RIDE_HEIGHT,
     SET_POSE_SERVICE,
     VEHICLE_NAME,
 )
-from s2_loop_sim.geometry import angle_to, distance_to
+from s2_loop_sim.geometry import (
+    angle_to,
+    capped,
+    distance_to,
+    is_negligible,
+    shortest_turn,
+)
 
 
 TURNING = 'turning'
 DRIVING = 'driving'
 DONE = 'done'
-
-
-def shortest_turn(angle):
-    """`angle` folded into [-pi, pi], so a turn never goes the long way round."""
-    return math.atan2(math.sin(angle), math.cos(angle))
-
-
-def capped(amount, limit):
-    """`amount` with its magnitude cut down to `limit`, keeping its sign."""
-    return math.copysign(min(limit, abs(amount)), amount)
-
-
-def is_negligible(amount):
-    """True when `amount` is rounding dust rather than ground still to cover."""
-    return abs(amount) < FLOAT_TOLERANCE
 
 
 def yaw_to_quaternion(yaw):
