@@ -11,7 +11,8 @@ GZ_SIM_RESOURCE_PATH is what Gazebo searches to resolve the model:// URIs in the
 world file, so it is set before Gazebo starts. The bridge argument uses Gazebo's
 `endpoint@ros_type` form. Models cannot be created until Gazebo is up and there
 is no readiness signal to wait on, so SPAWN_DELAY is a guess; raise it if models
-ever go missing at startup.
+ever go missing at startup. MOVEMENT_START_DELAY leaves the spawned models a
+moment to settle before the vehicle starts driving, and follows SPAWN_DELAY up.
 """
 import os
 
@@ -20,7 +21,12 @@ from launch import LaunchDescription
 from launch.actions import ExecuteProcess, SetEnvironmentVariable, TimerAction
 from launch_ros.actions import Node
 
-from s2_loop_sim.constants import SET_POSE_SERVICE, SPAWN_DELAY, WORLD_NAME
+from s2_loop_sim.constants import (
+    MOVEMENT_START_DELAY,
+    SET_POSE_SERVICE,
+    SPAWN_DELAY,
+    WORLD_NAME,
+)
 from s2_loop_sim.layout import random_layout, waypoint_coordinates
 
 
@@ -58,7 +64,7 @@ def generate_launch_description():
                     actions=[create_model(models_path, placement)
                              for placement in placements]),
 
-        TimerAction(period=SPAWN_DELAY + 1.0,
+        TimerAction(period=MOVEMENT_START_DELAY,
                     actions=[Node(package='s2_loop_sim',
                                   executable='movement_engine.py',
                                   parameters=[{'waypoints':
