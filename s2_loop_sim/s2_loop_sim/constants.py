@@ -28,10 +28,6 @@ VEHICLE_NAME = 'vehicle'
 WAYPOINT_MODEL = 'waypoint_star'
 
 SET_POSE_SERVICE = f'/world/{WORLD_NAME}/set_pose'
-TURN_TOPIC = '/turnto'
-MOVE_TOPIC = '/moveforward'
-MOVEMENT_DONE_TOPIC = '/movement_done'
-COMMAND_QUEUE_DEPTH = 10
 
 SDF_VEHICLE_BODY_HEIGHT = 0.25
 SDF_OBSTACLE_RADIUS = 0.45
