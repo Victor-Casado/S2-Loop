@@ -29,8 +29,8 @@
     </light>
 
     <!-- Ground plane. Static, so physics never simulates it, and 100 m square,
-         far larger than the 9 m arena the launch file spawns into. The plane's
-         <normal> points up the z axis, making it horizontal. -->
+         far larger than the 11 m walled arena the launch file spawns into.
+         The plane's <normal> points up the z axis, making it horizontal. -->
     <model name="ground_plane">
       <static>true</static>
       <link name="link">
