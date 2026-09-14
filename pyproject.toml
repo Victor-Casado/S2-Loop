@@ -3,7 +3,13 @@ line-length = 88
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "UP", "B", "SIM", "C4", "RET", "ARG"]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RET", "ARG"]
 ignore = [
     "ARG002", # ROS callbacks often receive unused message arguments.
 ]
+
+[tool.ruff.lint.isort]
+# Without this the package's own modules get filed under third party and sorted
+# in among rclpy and the message packages.
+known-first-party = ["s2_loop_sim"]
+lines-after-imports = 2

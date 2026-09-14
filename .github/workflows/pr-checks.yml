@@ -16,3 +16,20 @@ jobs:
         run: python -m pip install ruff
       - name: Lint Python files
         run: ruff check s2_loop_sim
+
+  # Ruff never opens CMakeLists.txt or package.xml, so a rename or a deleted
+  # script can pass the lint job and still break `colcon build`. This job is
+  # the one that would have noticed. ros-base is enough, since building the
+  # package needs only ament_cmake and no Gazebo.
+  colcon-build:
+    runs-on: ubuntu-latest
+    container: ros:jazzy-ros-base
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: src/s2_loop_sim
+      - name: Build
+        shell: bash
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          colcon build --packages-select s2_loop_sim
