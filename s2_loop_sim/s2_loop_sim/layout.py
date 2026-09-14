@@ -9,9 +9,13 @@ from typing import NamedTuple
 
 from s2_loop_sim.constants import (
     ARENA_HALF_SIZE,
+    GREEN_MODEL,
+    GREEN_Z,
     GRID_SPACING,
     OBSTACLE_COUNT,
     OBSTACLE_MODEL,
+    RED_MODEL,
+    RED_Z,
     SDF_OBSTACLE_RADIUS,
     SDF_VEHICLE_START,
     VEHICLE_RADIUS,
@@ -81,7 +85,28 @@ def random_layout():
     waypoints = scatter(nodes, WAYPOINT_MODEL, WAYPOINT_COUNT,
                         WAYPOINT_RADIUS, WAYPOINT_Z)
 
-    return obstacles + waypoints + arena_walls()
+    return obstacles + waypoints + arena_walls() + marker_parking()
+
+
+def marker_parking():
+    """The overlay stars' parking spots, off the map past the arena wall.
+
+    Five reds, one per waypoint index, plus one shared green. They have
+    to exist in the world before the movement engine can set_pose them
+    anywhere. Parked at x = -6, past the -5 wall ring, spread along y so
+    no two overlap: hidden from the driver and the default camera view.
+    """
+    parked = []
+    for index in range(1, WAYPOINT_COUNT + 1):
+        parked.append(Placement(RED_MODEL, index,
+                                Circle(-ARENA_HALF_SIZE - GRID_SPACING,
+                                       -index * GRID_SPACING, 0.0),
+                                RED_Z))
+    parked.append(Placement(GREEN_MODEL, 1,
+                            Circle(-ARENA_HALF_SIZE - GRID_SPACING,
+                                   0.0, 0.0),
+                            GREEN_Z))
+    return parked
 
 
 def arena_walls():

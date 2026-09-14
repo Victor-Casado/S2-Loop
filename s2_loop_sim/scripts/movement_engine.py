@@ -23,9 +23,13 @@ from ros_gz_interfaces.srv import SetEntityPose
 
 from s2_loop_sim.constants import (
     CONTROL_PERIOD,
+    GREEN_MODEL,
+    GREEN_Z,
     GRID_SPACING,
     METRES_PER_TICK,
     RADIANS_PER_TICK,
+    RED_MODEL,
+    RED_Z,
     RIDE_HEIGHT,
     SDF_VEHICLE_START,
     SET_POSE_SERVICE,
@@ -150,6 +154,7 @@ class MovementEngine(Node):
             if path is None:
                 self.get_logger().info(
                     f'Waypoint {self.next_waypoint + 1}: unreachable, skipping')
+                self.teleport(RED_MODEL, self.next_waypoint + 1, target, RED_Z)
                 self.next_waypoint += 1
                 continue
 
@@ -164,6 +169,7 @@ class MovementEngine(Node):
             self.get_logger().info(
                 f'Waypoint {self.next_waypoint + 1}: '
                 f'{len(self.cell_path)} cells via A*')
+            self.teleport(GREEN_MODEL, 1, target, GREEN_Z)
             return
 
         self.get_logger().info('Visited every reachable waypoint star')
@@ -236,11 +242,22 @@ class MovementEngine(Node):
         Asynchronously, because a blocking call would deadlock: the reply can
         only arrive through the same spin loop that is running this callback.
         """
+        self.teleport(VEHICLE_NAME, None, (self.x, self.y), RIDE_HEIGHT,
+                      yaw=self.yaw)
+
+    def teleport(self, model, index, position, z, yaw=0.0):
+        """Ask Gazebo to put one model somewhere, without tracking it.
+
+        The vehicle passes its own name and no index; the waypoint
+        overlays pass theirs, so the launch file's `model_index` naming
+        lands on the parked copy. Fire and forget, like publish_pose.
+        """
+        name = VEHICLE_NAME if index is None else f'{model}_{index}'
         request = SetEntityPose.Request()
-        request.entity = Entity(name=VEHICLE_NAME, type=Entity.MODEL)
+        request.entity = Entity(name=name, type=Entity.MODEL)
         request.pose = Pose(
-            position=Point(x=self.x, y=self.y, z=RIDE_HEIGHT),
-            orientation=rotation(self.yaw))
+            position=Point(x=position[0], y=position[1], z=z),
+            orientation=rotation(yaw))
 
         self.client.call_async(request)
 

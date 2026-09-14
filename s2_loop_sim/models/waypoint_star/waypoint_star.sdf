@@ -9,8 +9,10 @@
 
   Gazebo has no star primitive, so this is a <polyline>: a 2D outline in the xy
   plane, extruded upward by <height>. The ten points are the outer and inner
-  vertices of a five pointed star, alternating, taken off circles of radius 0.3
-  and 0.12 at 36 degree steps, which keeps the star inside one grid cell.
+  vertices of a five pointed star, alternating, taken off circles of radius 0.2
+  and 0.08 at 36 degree steps, which keeps the star inside one grid cell.
+  It is the smallest of three concentric stars: green (0.3) and red (0.4)
+  markers teleport over it to flag the active and unreachable waypoints.
   <emissive> adds a small amount of self-lit colour so the star stays yellow
   even where nothing is lighting it.
 -->
@@ -22,16 +24,16 @@
         <geometry>
           <polyline>
             <height>0.12</height>
-            <point>0.000000 0.300000</point>
-            <point>0.070534 0.097082</point>
-            <point>0.285317 0.092705</point>
-            <point>0.114127 -0.037082</point>
-            <point>0.176336 -0.242705</point>
-            <point>0.000000 -0.120000</point>
-            <point>-0.176336 -0.242705</point>
-            <point>-0.114127 -0.037082</point>
-            <point>-0.285317 0.092705</point>
-            <point>-0.070534 0.097082</point>
+            <point>0.000000 0.200000</point>
+            <point>0.047023 0.064721</point>
+            <point>0.190211 0.061803</point>
+            <point>0.076085 -0.024721</point>
+            <point>0.117557 -0.161803</point>
+            <point>0.000000 -0.080000</point>
+            <point>-0.117557 -0.161803</point>
+            <point>-0.076085 -0.024721</point>
+            <point>-0.190211 0.061803</point>
+            <point>-0.047023 0.064721</point>
           </polyline>
         </geometry>
         <material>
