@@ -1,10 +1,9 @@
-"""Scatter the scene's models around the arena without overlapping any of them.
+"""Place the scene's models on the nodes of a grid, one model per node.
 
 Pure arithmetic and randomness, no ROS. The launch file asks for a layout and
 turns the result into spawn actions; everything about where things go is
 decided here, where it can be exercised without starting Gazebo.
 """
-import math
 import random
 from typing import NamedTuple
 
@@ -41,50 +40,53 @@ WAYPOINT_RADIUS = 0.5
 WAYPOINT_Z = 0.06
 
 ARENA_HALF_SIZE = 4.5
-MIN_GAP = 0.3
+
+# Wider than the two largest footprints put together, with room to spare:
+# VEHICLE_RADIUS 0.70 + WAYPOINT_RADIUS 0.50 leaves 0.30 m of clear ground
+# between neighbours. So nothing on one node can reach anything on another,
+# and no layout needs checking for overlaps.
+GRID_SPACING = 1.5
+
 PARKED_VEHICLE = Circle(x=SDF_VEHICLE_START.x, y=SDF_VEHICLE_START.y,
                         radius=VEHICLE_RADIUS)
 
 
-def overlaps(spot, other):
-    """True when two footprints leave less than MIN_GAP of clear ground between."""
-    return (math.hypot(spot.x - other.x, spot.y - other.y)
-            <= spot.radius + other.radius + MIN_GAP)
+def free_nodes():
+    """Every grid node the arena holds, shuffled, minus the vehicle's own.
 
-
-def free_spot(taken, radius):
-    """A random footprint in the arena that overlaps nothing in `taken`."""
-    while True:
-        spot = Circle(random.uniform(-ARENA_HALF_SIZE, ARENA_HALF_SIZE),
-                      random.uniform(-ARENA_HALF_SIZE, ARENA_HALF_SIZE),
-                      radius)
-
-        if not any(overlaps(spot, other) for other in taken):
-            return spot
-
-
-def scatter(taken, model, count, radius, z):
-    """`count` copies of `model`, on ground clear of everything in `taken`.
-
-    Appends what it places to `taken`, so a second call avoids the first.
+    The vehicle is parked on a node rather than beside one, so leaving that
+    node out of the pool is all it takes to keep the scene off the bumper.
     """
+    reach = int(ARENA_HALF_SIZE / GRID_SPACING)
+    nodes = [(step * GRID_SPACING, row * GRID_SPACING)
+             for step in range(-reach, reach + 1)
+             for row in range(-reach, reach + 1)
+             if (step * GRID_SPACING, row * GRID_SPACING)
+             != (PARKED_VEHICLE.x, PARKED_VEHICLE.y)]
+
+    random.shuffle(nodes)
+
+    return nodes
+
+
+def scatter(nodes, model, count, radius, z):
+    """`count` copies of `model`, each taking a node off `nodes`."""
     placements = []
 
     for index in range(1, count + 1):
-        spot = free_spot(taken, radius)
-        taken.append(spot)
-        placements.append(Placement(model, index, spot, z))
+        x, y = nodes.pop()
+        placements.append(Placement(model, index, Circle(x, y, radius), z))
 
     return placements
 
 
 def random_layout():
-    """A Placement for every model to create, none of them overlapping."""
-    taken = [PARKED_VEHICLE]
+    """A Placement for every model to create, one model per grid node."""
+    nodes = free_nodes()
 
-    obstacles = scatter(taken, OBSTACLE_MODEL, OBSTACLE_COUNT,
+    obstacles = scatter(nodes, OBSTACLE_MODEL, OBSTACLE_COUNT,
                         SDF_OBSTACLE_RADIUS, SDF_OBSTACLE_RADIUS)
-    waypoints = scatter(taken, WAYPOINT_MODEL, WAYPOINT_COUNT,
+    waypoints = scatter(nodes, WAYPOINT_MODEL, WAYPOINT_COUNT,
                         WAYPOINT_RADIUS, WAYPOINT_Z)
 
     return obstacles + waypoints
