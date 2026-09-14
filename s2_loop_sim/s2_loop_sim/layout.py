@@ -81,7 +81,31 @@ def random_layout():
     waypoints = scatter(nodes, WAYPOINT_MODEL, WAYPOINT_COUNT,
                         WAYPOINT_RADIUS, WAYPOINT_Z)
 
-    return obstacles + waypoints
+    return obstacles + waypoints + arena_walls()
+
+
+def arena_walls():
+    """One wall obstacle per node of the ring just outside the arena.
+
+    The grid is 9 by 9; the ring at 11 by 11 hems the vehicle in, so
+    it can never leave the navigable cells. Past the randomised
+    placements, so wall indices never collide with theirs.
+    """
+    side = int(ARENA_HALF_SIZE / GRID_SPACING) + 1
+    index = OBSTACLE_COUNT + WAYPOINT_COUNT + 1
+    walls = []
+
+    for step in range(-side, side + 1):
+        for row in range(-side, side + 1):
+            if abs(step) != side and abs(row) != side:
+                continue
+            x, y = step * GRID_SPACING, row * GRID_SPACING
+            walls.append(Placement(OBSTACLE_MODEL, index,
+                                   Circle(x, y, SDF_OBSTACLE_RADIUS),
+                                   SDF_OBSTACLE_RADIUS))
+            index += 1
+
+    return walls
 
 
 def model_coordinates(placements, model):
@@ -103,8 +127,9 @@ def free_cell_coordinates(placements):
     """Every grid node without an obstacle on it, flattened to [x, y, ...].
 
     Waypoint stars stay in: the vehicle has to reach them, so they must be
-    traversable. Only obstacle nodes come out. The movement engine rebuilds
-    its nav graph from this once at startup.
+    traversable. Only obstacle nodes come out, and the arena walls are
+    outside the grid anyway. The movement engine rebuilds its nav graph
+    from this once at startup.
     """
     reach = int(ARENA_HALF_SIZE / GRID_SPACING)
     blocked = {(placement.spot.x, placement.spot.y)

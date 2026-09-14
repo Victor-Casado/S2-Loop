@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <!--
-  One waypoint marker. Five are placed on grid nodes each launch.
+  One waypoint marker. Five are placed on grid nodes each launch, inside
+  the walled arena.
 
   Purely decorative: it has a visual and no collision, so the vehicle drives
   straight through it. Arriving at a waypoint will be decided by comparing
