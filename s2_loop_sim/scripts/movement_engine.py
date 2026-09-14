@@ -12,14 +12,13 @@ is, because nothing else moves it. Nothing here is physical, so the vehicle will
 drive through an obstacle until collision checks exist.
 """
 import math
-import sys
 
 import rclpy
 from geometry_msgs.msg import Point, Pose, Quaternion
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from ros_gz_interfaces.msg import Entity
 from ros_gz_interfaces.srv import SetEntityPose
-from rclpy.utilities import remove_ros_args
 
 from s2_loop_sim.constants import (
     CONTROL_PERIOD,
@@ -36,7 +35,10 @@ from s2_loop_sim.geometry import (
     is_negligible,
     shortest_turn,
 )
+from s2_loop_sim.layout import pair_coordinates
 
+
+WAYPOINTS_PARAMETER = 'waypoints'
 
 TURNING = 'turning'
 DRIVING = 'driving'
@@ -55,9 +57,9 @@ class MovementEngine(Node):
     actually match, since nothing here ever checks.
     """
 
-    def __init__(self, waypoints):
+    def __init__(self):
         super().__init__('movement_engine')
-        self.waypoints = waypoints
+        self.waypoints = pair_coordinates(self.declared_waypoints())
         self.next_waypoint = 0
 
         self.x = 0.0
@@ -70,6 +72,20 @@ class MovementEngine(Node):
 
         self.client = self.create_client(SetEntityPose, SET_POSE_SERVICE)
         self.create_timer(CONTROL_PERIOD, self.step)
+
+    def declared_waypoints(self):
+        """The flattened waypoint coordinates the launch file passed in.
+
+        Declared with a type and no default, which is how rclpy says "a double
+        array or nothing". Started by hand with no waypoints, the parameter is
+        left uninitialised and reading it would raise, so the empty list stands
+        in and the node simply finishes with nothing to visit.
+        """
+        self.declare_parameter(WAYPOINTS_PARAMETER, Parameter.Type.DOUBLE_ARRAY)
+        nothing_to_visit = Parameter(
+            WAYPOINTS_PARAMETER, Parameter.Type.DOUBLE_ARRAY, [])
+
+        return self.get_parameter_or(WAYPOINTS_PARAMETER, nothing_to_visit).value
 
     def step(self):
         """Advance one tick and mirror the result into Gazebo.
@@ -155,18 +171,8 @@ def main():
     callbacks overlap and none of the state needs a lock.
     """
     rclpy.init()
-    waypoint_args = remove_ros_args(args=sys.argv)[1:]
-    rclpy.spin(MovementEngine(parse_waypoints(waypoint_args)))
+    rclpy.spin(MovementEngine())
     rclpy.shutdown()
-
-
-def parse_waypoints(arguments):
-    """Convert command-line numbers into [(x, y), ...] waypoint pairs."""
-    if len(arguments) % 2 != 0:
-        raise ValueError('waypoints must be passed as x y pairs')
-
-    numbers = [float(argument) for argument in arguments]
-    return list(zip(numbers[0::2], numbers[1::2], strict=True))
 
 
 if __name__ == '__main__':
