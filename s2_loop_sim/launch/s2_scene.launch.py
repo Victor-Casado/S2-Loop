@@ -45,6 +45,7 @@ def create_model(models_path, placement):
     )
 
 
+# `ros2 launch` imports this module and calls this function by name.
 def generate_launch_description():
     package_path = get_package_share_directory('s2_loop_sim')
     world_path = os.path.join(package_path, 'worlds', f'{WORLD_NAME}.sdf')

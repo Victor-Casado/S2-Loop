@@ -47,7 +47,7 @@ DRIVING = 'driving'
 DONE = 'done'
 
 
-def yaw_to_quaternion(yaw):
+def rotation(yaw):
     """A rotation about the vertical axis, in the four number form Gazebo wants."""
     return Quaternion(z=math.sin(yaw / 2), w=math.cos(yaw / 2))
 
@@ -161,7 +161,7 @@ class MovementEngine(Node):
         request.entity = Entity(name=VEHICLE_NAME, type=Entity.MODEL)
         request.pose = Pose(
             position=Point(x=self.x, y=self.y, z=RIDE_HEIGHT),
-            orientation=yaw_to_quaternion(self.yaw))
+            orientation=rotation(self.yaw))
 
         self.client.call_async(request)
 
