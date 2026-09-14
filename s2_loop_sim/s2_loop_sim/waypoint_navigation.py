@@ -46,8 +46,8 @@ class WaypointDriver(Node):
         self.move_publisher = self.create_publisher(
             Float64, MOVE_TOPIC, COMMAND_QUEUE_DEPTH)
         self.create_subscription(
-            Empty, MOVEMENT_DONE_TOPIC,
-            lambda _: self.movement_done(), COMMAND_QUEUE_DEPTH)
+            Empty, MOVEMENT_DONE_TOPIC, self.movement_done,
+            COMMAND_QUEUE_DEPTH)
 
         self.create_timer(CONTROL_PERIOD, self.step)
 
@@ -81,7 +81,7 @@ class WaypointDriver(Node):
         self.turn_publisher.publish(Float64(data=self.target_yaw))
         self.state = WAITING_FOR_TURN
 
-    def movement_done(self):
+    def movement_done(self, _):
         """Send the next command after movement_engine.py finishes one."""
         if self.state == WAITING_FOR_TURN:
             self.drive_to_waypoint()
