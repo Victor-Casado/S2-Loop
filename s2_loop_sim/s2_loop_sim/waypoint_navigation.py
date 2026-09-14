@@ -1,16 +1,13 @@
-"""Stateful waypoint navigation for the simulated vehicle."""
-import math
 import time
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Float64
+from std_msgs.msg import Empty, Float64
 
 from s2_loop_sim.constants import (
-    ANGULAR_SPEED,
     COMMAND_QUEUE_DEPTH,
     CONTROL_PERIOD,
-    LINEAR_SPEED,
+    MOVEMENT_DONE_TOPIC,
     MOVE_TOPIC,
     TURN_TOPIC,
 )
@@ -18,29 +15,16 @@ from s2_loop_sim.geometry import angle_to, distance_to
 
 
 READY_TO_TURN = 'ready_to_turn'
-READY_TO_DRIVE = 'ready_to_drive'
-
-
-def wait_for_turn(start_angle, target_angle):
-    """Seconds needed to finish the turn, plus one control tick."""
-    error = math.atan2(
-        math.sin(target_angle - start_angle),
-        math.cos(target_angle - start_angle),
-    )
-    return abs(error) / ANGULAR_SPEED + CONTROL_PERIOD
-
-
-def wait_for_drive(distance):
-    """Seconds needed to finish the drive, plus one control tick."""
-    return distance / LINEAR_SPEED + CONTROL_PERIOD
+WAITING_FOR_TURN = 'waiting_for_turn'
+WAITING_FOR_DRIVE = 'waiting_for_drive'
 
 
 class WaypointDriver(Node):
     """ROS node state for driving through waypoint stars.
 
     The movement engine does not publish pose, so this class keeps the matching
-    pose estimate and schedules the next command after the current one should be
-    complete.
+    pose estimate. It waits for movement_engine.py to report that a command is
+    done before sending the next one.
     """
 
     def __init__(self, waypoints):
@@ -61,18 +45,18 @@ class WaypointDriver(Node):
             Float64, TURN_TOPIC, COMMAND_QUEUE_DEPTH)
         self.move_publisher = self.create_publisher(
             Float64, MOVE_TOPIC, COMMAND_QUEUE_DEPTH)
+        self.create_subscription(
+            Empty, MOVEMENT_DONE_TOPIC,
+            lambda _: self.movement_done(), COMMAND_QUEUE_DEPTH)
 
         self.create_timer(CONTROL_PERIOD, self.step)
 
     def step(self):
-        """Start the next turn or drive once the previous command has finished."""
-        if time.monotonic() < self.wait_until:
+        """Start the next turn once startup or the previous drive is done."""
+        if self.state != READY_TO_TURN or time.monotonic() < self.wait_until:
             return
 
-        if self.state == READY_TO_TURN:
-            self.turn_to_next_waypoint()
-        else:
-            self.drive_to_waypoint()
+        self.turn_to_next_waypoint()
 
     def turn_to_next_waypoint(self):
         """Publish the turn command for the next star."""
@@ -91,20 +75,24 @@ class WaypointDriver(Node):
             f'Turning toward waypoint {self.next_waypoint + 1}: '
             f'heading={self.target_yaw:.2f} rad')
         self.turn_publisher.publish(Float64(data=self.target_yaw))
-        self.state = READY_TO_DRIVE
-        self.wait_until = time.monotonic() + wait_for_turn(
-            self.yaw, self.target_yaw)
+        self.state = WAITING_FOR_TURN
+
+    def movement_done(self):
+        """Send the next command after movement_engine.py finishes one."""
+        if self.state == WAITING_FOR_TURN:
+            self.drive_to_waypoint()
+        elif self.state == WAITING_FOR_DRIVE:
+            self.x = self.target_x
+            self.y = self.target_y
+            self.yaw = self.target_yaw
+            self.next_waypoint += 1
+            self.state = READY_TO_TURN
+            self.wait_until = time.monotonic() + CONTROL_PERIOD
 
     def drive_to_waypoint(self):
-        """Publish the drive command, then queue the next star."""
+        """Publish the drive command for the already selected star."""
         self.get_logger().info(
             f'Driving to waypoint {self.next_waypoint + 1}: '
             f'distance={self.distance:.2f} m')
         self.move_publisher.publish(Float64(data=self.distance))
-
-        self.x = self.target_x
-        self.y = self.target_y
-        self.yaw = self.target_yaw
-        self.next_waypoint += 1
-        self.state = READY_TO_TURN
-        self.wait_until = time.monotonic() + wait_for_drive(self.distance)
+        self.state = WAITING_FOR_DRIVE
