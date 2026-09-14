@@ -11,9 +11,9 @@
   every remaining entry is an exec dependency, and each maps to something the
   Python files import:
   ament_index_python and launch_ros for the launch file, rclpy, geometry_msgs,
-  std_msgs and ros_gz_interfaces for the movement engine, ros_gz_sim for the
-  `create` tool that spawns models, ros_gz_bridge for the process that connects
-  ROS to Gazebo.
+  std_msgs and ros_gz_interfaces for the movement engine and waypoint driver,
+  ros_gz_sim for the `create` tool that spawns models, ros_gz_bridge for the
+  process that connects ROS to Gazebo.
 -->
 <package format="3">
   <name>s2_loop_sim</name>

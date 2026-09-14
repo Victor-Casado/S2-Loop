@@ -26,7 +26,7 @@ ament_python_install_package(${PROJECT_NAME})
 # Executables go to lib/s2_loop_sim/, which is where `ros2 run` looks. PROGRAMS
 # rather than FILES because it keeps the executable bit, and the script is run
 # directly via its shebang rather than handed to an interpreter.
-install(PROGRAMS scripts/movement_engine.py
+install(PROGRAMS scripts/movement_engine.py scripts/waypoint_driver.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

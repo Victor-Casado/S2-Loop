@@ -20,13 +20,14 @@ from geometry_msgs.msg import Point, Pose, Quaternion
 from rclpy.node import Node
 from ros_gz_interfaces.msg import Entity
 from ros_gz_interfaces.srv import SetEntityPose
-from std_msgs.msg import Float64
+from std_msgs.msg import Empty, Float64
 
 from s2_loop_sim.constants import (
     COMMAND_QUEUE_DEPTH,
     CONTROL_PERIOD,
     FLOAT_TOLERANCE,
     METRES_PER_TICK,
+    MOVEMENT_DONE_TOPIC,
     MOVE_TOPIC,
     RADIANS_PER_TICK,
     RIDE_HEIGHT,
@@ -76,6 +77,8 @@ class MovementEngine(Node):
         self.remaining = None
 
         self.client = self.create_client(SetEntityPose, SET_POSE_SERVICE)
+        self.done_publisher = self.create_publisher(
+            Empty, MOVEMENT_DONE_TOPIC, COMMAND_QUEUE_DEPTH)
 
         self.create_subscription(
             Float64, TURN_TOPIC,
@@ -105,14 +108,17 @@ class MovementEngine(Node):
         if not self.client.service_is_ready():
             return
 
+        done = False
         if self.target_yaw is not None:
-            self.turn_step()
+            done = self.turn_step()
         elif self.remaining is not None:
-            self.drive_step()
+            done = self.drive_step()
         else:
             return
 
         self.publish_pose()
+        if done:
+            self.done_publisher.publish(Empty())
 
     def turn_step(self):
         """Rotate one tick's worth toward the target heading."""
@@ -121,6 +127,9 @@ class MovementEngine(Node):
 
         if abs(error) <= RADIANS_PER_TICK:
             self.target_yaw = None
+            return True
+
+        return False
 
     def drive_step(self):
         """Travel one tick's worth along the current heading."""
@@ -130,6 +139,7 @@ class MovementEngine(Node):
 
         left = self.remaining - distance
         self.remaining = None if is_negligible(left) else left
+        return self.remaining is None
 
     def publish_pose(self):
         """Ask Gazebo to put the model where we now believe it is.
