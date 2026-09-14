@@ -54,5 +54,14 @@ OBSTACLE_COUNT = 25
 
 WAYPOINT_MODEL = 'waypoint_star'
 WAYPOINT_COUNT = 5
-WAYPOINT_RADIUS = 0.3
+WAYPOINT_RADIUS = 0.2
 WAYPOINT_Z = 0.06
+
+# Overlay stars marking the active (green) and unreachable (red) waypoints.
+# Concentric with the yellow star: green 0.3 and red 0.4 outer radii, each
+# raised a centimetre so stacked polys never z-fight.
+GREEN_MODEL = 'waypoint_star_green'
+GREEN_Z = 0.07
+
+RED_MODEL = 'waypoint_star_red'
+RED_Z = 0.08

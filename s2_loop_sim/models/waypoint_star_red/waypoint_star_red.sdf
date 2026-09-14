@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!--
+  The unreachable waypoint marker: a red star, the largest of the three
+  concentric stars (outer radius 0.4 over green 0.3 over yellow 0.2), so
+  teleporting it on top always reads as red no matter what is under it.
+  Same star geometry as waypoint_star.sdf, scaled up two steps;
+  visual-only, no collision.
+-->
+<sdf version="1.9">
+  <model name="waypoint_star_red">
+    <static>true</static>
+    <link name="star">
+      <visual name="visual">
+        <geometry>
+          <polyline>
+            <height>0.12</height>
+            <point>0.000000 0.400000</point>
+            <point>0.094045 0.129443</point>
+            <point>0.380423 0.123607</point>
+            <point>0.152170 -0.049443</point>
+            <point>0.235114 -0.323607</point>
+            <point>0.000000 -0.160000</point>
+            <point>-0.235114 -0.323607</point>
+            <point>-0.152170 -0.049443</point>
+            <point>-0.380423 0.123607</point>
+            <point>-0.094045 0.129443</point>
+          </polyline>
+        </geometry>
+        <material>
+          <ambient>0.8 0.0 0.0 1.0</ambient>
+          <diffuse>0.8 0.0 0.0 1.0</diffuse>
+          <specular>0.1 0.1 0.1 1.0</specular>
+          <emissive>0.3 0.0 0.0 1.0</emissive>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>
